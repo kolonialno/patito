@@ -254,3 +254,29 @@ def test_model_joins():
     # Semi- and anti-joins do not change the schema at all
     assert Left.join(Right, how="semi") is Left
     assert Left.join(Right, how="anti") is Left
+
+
+def test_model_selects():
+    """It should produce models compatible with select statements."""
+
+    class MyModel(pt.Model):
+        a: Optional[int]
+        b: int = pt.Field(gt=10)
+
+    MySubModel = MyModel.select("b")
+    assert MySubModel.columns == ["b"]
+    MySubModel(b=11)
+    with pytest.raises(ValidationError, match="limit_value=10"):
+        MySubModel(b=1)
+
+    MyTotalModel = MyModel.select(["a", "b"])
+    assert MyTotalModel.columns == ["a", "b"]
+    MyTotalModel(a=1, b=11)
+    with pytest.raises(ValidationError, match="limit_value=10"):
+        MyTotalModel(a=1, b=1)
+    assert MyTotalModel.nullable_columns == {"a"}
+
+    with pytest.raises(
+        ValueError, match="The following selected fields do not exist: {'c'}"
+    ):
+        MyModel.select("c")

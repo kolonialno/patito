@@ -630,7 +630,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
 
     @classmethod
     def join(
-        cls: Type[ModelType],
+        cls: Type["Model"],
         other: Type["Model"],
         how: Literal["inner", "left", "outer", "asof", "cross", "semi", "anti"],
     ) -> Type["Model"]:
@@ -698,5 +698,55 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         return create_model(
             f"{cls.__name__}{how.capitalize()}Join{other.__name__}",
             **kwargs,
-            __base__=cls,
+            __base__=Model,
+        )
+
+    @classmethod
+    def select(cls: Type["Model"], fields: Union[str, Iterable[str]]) -> Type["Model"]:
+        """
+        Create a new model consisting of only a subset of the model fields.
+
+        Args:
+            fields: A single field name as a string, or a set of fields as a collection
+              of strings.
+
+        Returns:
+            A new model containing only the fields specified by `fields`.
+
+        Example:
+            >>> class MyModel(Model):
+            ...     a: int
+            ...     b: int
+            ...     c: int
+
+            >>> MyModel.select("a").columns
+            ['a']
+
+            >>> MyModel.select(["b", "c"]).columns
+            ['b', 'c']
+        """
+        if isinstance(fields, str):
+            fields = [fields]
+
+        fields = set(fields)
+        if non_existent_fields := fields - set(cls.columns):
+            raise ValueError(
+                f"The following selected fields do not exist: {non_existent_fields}"
+            )
+
+        new_fields = {}
+        for field_name, field in cls.__fields__.items():
+            if field_name not in fields:
+                continue
+            field_type = field.type_
+            field_default = field.default
+            if field.required and field_default is None:
+                field_default = ...
+            new_fields[field_name] = (field_type, field_default)
+
+        return create_model(
+            f"{cls.__name__}SubSelect",
+            **new_fields,
+            __validators__={"__validators__": cls.__validators__},
+            __base__=Model,
         )
