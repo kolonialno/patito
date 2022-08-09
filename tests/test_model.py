@@ -1,10 +1,12 @@
 """Tests for patito.Model."""
 # pyright: reportPrivateImportUsage=false
+import re
 from datetime import date, datetime, timedelta
-from typing import Optional
+from typing import Optional, Type
 
 import polars as pl
 import pytest
+from pydantic import ValidationError
 from typing_extensions import Literal
 
 import patito as pt
@@ -205,3 +207,50 @@ def test_mapping_to_polars_dtypes():
         "categorical_column": [pl.Categorical, pl.Utf8],
         "null_column": [pl.Null],
     }
+
+
+def test_model_joins():
+    """It should produce models compatible with join statements."""
+
+    class Left(pt.Model):
+        left: int = pt.Field(gt=20)
+        opt_left: Optional[int]
+
+    class Right(pt.Model):
+        right: int = pt.Field(gt=20)
+        opt_right: Optional[int]
+
+    def test_model_validator(model: Type[pt.Model]) -> None:
+        """Test if all field validators have been included correctly."""
+        with pytest.raises(
+            ValidationError,
+            match=re.compile(
+                r".*limit_value=20.*\n.*\n.*limit_value=20.*", re.MULTILINE
+            ),
+        ):
+            model(left=1, opt_left=1, right=1, opt_right=1)
+
+    # An inner join should keep nullability information
+    InnerJoinModel = Left.join(Right, how="inner")
+    assert InnerJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert InnerJoinModel.nullable_columns == {"opt_left", "opt_right"}
+    assert InnerJoinModel.__name__ == "LeftInnerJoinRight"
+    test_model_validator(InnerJoinModel)
+
+    # Left joins should make all fields on left model nullable
+    LeftJoinModel = Left.join(Right, how="left")
+    assert LeftJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert LeftJoinModel.nullable_columns == {"opt_left", "right", "opt_right"}
+    assert LeftJoinModel.__name__ == "LeftLeftJoinRight"
+    test_model_validator(LeftJoinModel)
+
+    # Outer joins should make all columns nullable
+    OuterJoinModel = Left.join(Right, how="outer")
+    assert OuterJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert OuterJoinModel.nullable_columns == {"left", "opt_left", "right", "opt_right"}
+    assert OuterJoinModel.__name__ == "LeftOuterJoinRight"
+    test_model_validator(OuterJoinModel)
+
+    # Semi- and anti-joins do not change the schema at all
+    assert Left.join(Right, how="semi") is Left
+    assert Left.join(Right, how="anti") is Left

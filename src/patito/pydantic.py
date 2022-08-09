@@ -7,8 +7,9 @@ from datetime import date, datetime
 from typing import Any, ClassVar, Dict, List, Optional, Set, Type, TypeVar, Union
 
 import polars as pl
-from pydantic import BaseConfig, BaseModel, Field  # noqa: F401
+from pydantic import BaseConfig, BaseModel, Field, create_model  # noqa: F401
 from pydantic.main import ModelMetaclass as PydanticModelMetaclass
+from typing_extensions import Literal, get_args
 
 from patito.polars import DataFrame
 from patito.validators import validate
@@ -625,4 +626,77 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             pl.DataFrame()
             .with_columns(series)  # type: ignore
             .with_columns(unique_series)
+        )
+
+    @classmethod
+    def join(
+        cls: Type[ModelType],
+        other: Type["Model"],
+        how: Literal["inner", "left", "outer", "asof", "cross", "semi", "anti"],
+    ) -> Type["Model"]:
+        """
+        Dynamically create a new model compatible with a SQL Join operation.
+
+        For instance, `ModelA.join(ModelB, how="left")` will create a model containing
+        all the fields of `ModelA` and `ModelB`, but where all fields of `ModelB` has
+        been made `Optional`, i.e. nullable. This is consistent with the LEFT JOIN
+        SQL operation making all the columns of the right table nullable.
+
+        Args:
+            other: Another patito Model class.
+            how: The type of SQL Join operation.
+
+        Returns:
+            A new model type compatible with the resulting schema produced by the given
+              join operation.
+
+        Examples:
+            >>> class A(Model):
+            ...     a: int
+
+            >>> class B(Model):
+            ...     b: int
+
+            >>> InnerJoinedModel = A.join(B, how="inner")
+            >>> InnerJoinedModel.columns
+            ['a', 'b']
+            >>> InnerJoinedModel.nullable_columns
+            set()
+
+            >>> LeftJoinedModel = A.join(B, how="left")
+            >>> LeftJoinedModel.nullable_columns
+            {'b'}
+
+            >>> OuterJoinedModel = A.join(B, how="outer")
+            >>> sorted(OuterJoinedModel.nullable_columns)
+            ['a', 'b']
+
+            >>> A.join(B, how="anti") is A
+            True
+        """
+        if how in {"semi", "anti"}:
+            return cls
+
+        kwargs: Dict[str, Any] = {}
+        for model, nullable_methods in (
+            (cls, {"outer"}),
+            (other, {"left", "outer", "asof"}),
+        ):
+            for field_name, field in model.__fields__.items():
+                field_type = field.type_
+                field_default = field.default
+                if how in nullable_methods and type(None) not in get_args(field.type_):
+                    # This originally non-nullable field has become nullable
+                    field_type = Optional[field_type]
+                elif field.required and field_default is None:
+                    # We need to replace Pydantic's None default value with ... in order
+                    # to make it clear that the field is still non-nullable and
+                    # required.
+                    field_default = ...
+                kwargs[field_name] = (field_type, field_default)
+
+        return create_model(
+            f"{cls.__name__}{how.capitalize()}Join{other.__name__}",
+            **kwargs,
+            __base__=cls,
         )
