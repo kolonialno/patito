@@ -232,21 +232,21 @@ def test_model_joins():
 
     # An inner join should keep nullability information
     InnerJoinModel = Left.join(Right, how="inner")
-    assert InnerJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert set(InnerJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
     assert InnerJoinModel.nullable_columns == {"opt_left", "opt_right"}
     assert InnerJoinModel.__name__ == "LeftInnerJoinRight"
     test_model_validator(InnerJoinModel)
 
     # Left joins should make all fields on left model nullable
     LeftJoinModel = Left.join(Right, how="left")
-    assert LeftJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert set(LeftJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
     assert LeftJoinModel.nullable_columns == {"opt_left", "right", "opt_right"}
     assert LeftJoinModel.__name__ == "LeftLeftJoinRight"
     test_model_validator(LeftJoinModel)
 
     # Outer joins should make all columns nullable
     OuterJoinModel = Left.join(Right, how="outer")
-    assert OuterJoinModel.columns == ["left", "opt_left", "right", "opt_right"]
+    assert set(OuterJoinModel.columns) == {"left", "opt_left", "right", "opt_right"}
     assert OuterJoinModel.nullable_columns == {"left", "opt_left", "right", "opt_right"}
     assert OuterJoinModel.__name__ == "LeftOuterJoinRight"
     test_model_validator(OuterJoinModel)
@@ -270,7 +270,7 @@ def test_model_selects():
         MySubModel(b=1)
 
     MyTotalModel = MyModel.select(["a", "b"])
-    assert MyTotalModel.columns == ["a", "b"]
+    assert sorted(MyTotalModel.columns) == ["a", "b"]
     MyTotalModel(a=1, b=11)
     with pytest.raises(ValidationError, match="limit_value=10"):
         MyTotalModel(a=1, b=1)
@@ -280,3 +280,60 @@ def test_model_selects():
         ValueError, match="The following selected fields do not exist: {'c'}"
     ):
         MyModel.select("c")
+
+
+def test_model_prefix_and_suffix():
+    """It should produce models where all fields have been prefixed/suffixed."""
+
+    class MyModel(pt.Model):
+        a: Optional[int]
+        b: str
+
+    NewModel = MyModel.prefix("pre_").suffix("_post")
+    assert sorted(NewModel.columns) == ["pre_a_post", "pre_b_post"]
+    assert NewModel.nullable_columns == {"pre_a_post"}
+
+
+def test_model_field_renaming():
+    """It should be able to change its field names."""
+
+    class MyModel(pt.Model):
+        a: Optional[int]
+        b: str
+
+    NewModel = MyModel.rename({"b": "B"})
+    assert sorted(NewModel.columns) == ["B", "a"]
+
+    with pytest.raises(
+        ValueError,
+        match="The following fields do not exist for renaming: {'c'}",
+    ):
+        MyModel.rename({"c": "C"})
+
+
+def test_model_field_dropping():
+    """It should be able to drop a subset of its fields"""
+
+    class MyModel(pt.Model):
+        a: int
+        b: int
+        c: int
+
+    assert sorted(MyModel.drop("c").columns) == ["a", "b"]
+    assert MyModel.drop(["b", "c"]).columns == ["a"]
+
+
+def test_with_fields():
+    """It should allow whe user to add additional fields."""
+
+    class MyModel(pt.Model):
+        a: int
+
+    ExpandedModel = MyModel.with_fields(
+        b=(int, ...),
+        c=(int, None),
+        d=(int, pt.Field(gt=10)),
+        e=(Optional[int], None),
+    )
+    assert sorted(ExpandedModel.columns) == list("abcde")
+    assert ExpandedModel.nullable_columns == set("ce")
