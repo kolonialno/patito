@@ -1,3 +1,4 @@
+.. _DataFrame.get:
 patito.DataFrame.get
 ====================
 
