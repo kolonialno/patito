@@ -91,10 +91,19 @@ class ModelMetaclass(PydanticModelMetaclass):
     @property
     def columns(cls: Type[ModelType]) -> List[str]:  # type: ignore
         """
-        Return the name of the specified column fields the DataFrame.
+        Return the name of the dataframe columns specified by the fields of the model.
 
         Returns:
             List of column names.
+
+        Example:
+            >>> import patito as pt
+            >>> class Product(pt.Model):
+            ...     name: str
+            ...     price: int
+            ...
+            >>> Product.columns
+            ['name', 'price']
         """
         return list(cls.schema()["properties"].keys())
 
@@ -103,13 +112,25 @@ class ModelMetaclass(PydanticModelMetaclass):
         cls: Type[ModelType],
     ) -> dict[str, Type[pl.DataType]]:
         """
-        Return the dtypes of the dataframe.
+        Return the polars dtypes of the dataframe.
 
         Unless Field(dtype=...) is specified, the highest signed column dtype
         is chosen for integer and float columns.
 
         Returns:
             A dictionary mapping string column names to polars dtype classes.
+
+        Example:
+            >>> import patito as pt
+            >>> class Product(pt.Model):
+            ...     name: str
+            ...     ideal_temperature: int
+            ...     price: float
+            ...
+            >>> Product.dtypes
+            {'name': <class 'polars.datatypes.Utf8'>, \
+'ideal_temperature': <class 'polars.datatypes.Int64'>, \
+'price': <class 'polars.datatypes.Float64'>}
         """
         return {
             column: valid_dtypes[0] for column, valid_dtypes in cls.valid_dtypes.items()
@@ -120,17 +141,40 @@ class ModelMetaclass(PydanticModelMetaclass):
         cls: Type[ModelType],
     ) -> dict[str, List[Type[pl.DataType]]]:
         """
-        Return valid polars dtypes as a column name -> dtypes mapping.
+        Return a list of polars dtypes which Patito considers valid for each field.
 
         The first item of each list is the default dtype chosen by Patito.
 
         Returns:
-            A dictionary mapping each column string name to a list of valid
-            dtypes.
+            A dictionary mapping each column string name to a list of valid dtypes.
 
         Raises:
             NotImplementedError: If one or more model fields are annotated with types
                 not compatible with polars.
+
+        Example:
+            >>> from pprint import pprint
+            >>> import patito as pt
+
+            >>> class MyModel(pt.Model):
+            ...     bool_column: bool
+            ...     str_column: str
+            ...     int_column: int
+            ...     float_column: float
+            ...
+            >>> pprint(MyModel.valid_dtypes)
+            {'bool_column': [<class 'polars.datatypes.Boolean'>],
+             'float_column': [<class 'polars.datatypes.Float64'>,
+                              <class 'polars.datatypes.Float32'>],
+             'int_column': [<class 'polars.datatypes.Int64'>,
+                            <class 'polars.datatypes.Int32'>,
+                            <class 'polars.datatypes.Int16'>,
+                            <class 'polars.datatypes.Int8'>,
+                            <class 'polars.datatypes.UInt64'>,
+                            <class 'polars.datatypes.UInt32'>,
+                            <class 'polars.datatypes.UInt16'>,
+                            <class 'polars.datatypes.UInt8'>],
+             'str_column': [<class 'polars.datatypes.Utf8'>]}
         """
         valid_dtypes = {}
         for column, props in cls._schema_properties().items():
@@ -203,6 +247,17 @@ class ModelMetaclass(PydanticModelMetaclass):
 
         Returns:
             Dictionary containing fields with their respective default values.
+
+        Example:
+            >>> from typing_extensions import Literal
+            >>> import patito as pt
+            >>> class Product(pt.Model):
+            ...     name: str
+            ...     price: int = 0
+            ...     temperature_zone: Literal["dry", "cold", "frozen"] = "dry"
+            ...
+            >>> Product.defaults
+            {'price': 0, 'temperature_zone': 'dry'}
         """
         return {
             field_name: props["default"]
@@ -219,6 +274,18 @@ class ModelMetaclass(PydanticModelMetaclass):
 
         Returns:
             Set of column name strings.
+
+        Example:
+            >>> from typing import Optional
+            >>> import patito as pt
+            >>> class MyModel(pt.Model):
+            ...     nullable_field: Optional[int]
+            ...     inferred_nullable_field: int = None
+            ...     non_nullable_field: int
+            ...     another_non_nullable_field: str
+            ...
+            >>> sorted(MyModel.non_nullable_columns)
+            ['another_non_nullable_field', 'non_nullable_field']
         """
         return set(cls.schema().get("required", {}))
 
@@ -231,6 +298,18 @@ class ModelMetaclass(PydanticModelMetaclass):
 
         Returns:
             Set of column name strings.
+
+        Example:
+            >>> from typing import Optional
+            >>> import patito as pt
+            >>> class MyModel(pt.Model):
+            ...     nullable_field: Optional[int]
+            ...     inferred_nullable_field: int = None
+            ...     non_nullable_field: int
+            ...     another_non_nullable_field: str
+            ...
+            >>> sorted(MyModel.nullable_columns)
+            ['inferred_nullable_field', 'nullable_field']
         """
         return set(cls.columns) - cls.non_nullable_columns
 
@@ -243,6 +322,18 @@ class ModelMetaclass(PydanticModelMetaclass):
 
         Returns:
             Set of column name strings.
+
+        Example:
+            >>> from typing import Optional
+            >>> import patito as pt
+
+            >>> class Product(pt.Model):
+            ...     product_id: int = pt.Field(unique=True)
+            ...     barcode: Optional[str] = pt.Field(unique=True)
+            ...     name: str
+            ...
+            >>> sorted(Product.unique_columns)
+            ['barcode', 'product_id']
         """
         props = cls._schema_properties()
         return {column for column in cls.columns if props[column].get("unique", False)}
@@ -252,10 +343,25 @@ class ModelMetaclass(PydanticModelMetaclass):
         cls: Type[ModelType],
     ) -> dict[str, str]:
         """
-        Return SQL types as a column name -> sql type dict mapping.
+        Return compatible DuckDB SQL types for all model fields.
 
         Returns:
             Dictionary with column name keys and SQL type identifier strings.
+
+        Example:
+            >>> import patito as pt
+
+            >>> class MyModel(pt.Model):
+            ...     int_column: int
+            ...     str_column: str
+            ...     float_column: float
+            ...     literal_column: Literal["a", "b", "c"]
+            ...
+            >>> MyModel.sql_types
+            {'int_column': 'BIGINT',
+             'str_column': 'VARCHAR',
+             'float_column': 'DOUBLE',
+             'literal_column': 'enum__4a496993dde04060df4e15a340651b45'}
         """
         from patito.duckdb import _enum_type_name
 
@@ -664,9 +770,11 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         Examples:
             >>> class A(Model):
             ...     a: int
+            ...
 
             >>> class B(Model):
             ...     b: int
+            ...
 
             >>> InnerJoinedModel = A.join(B, how="inner")
             >>> InnerJoinedModel.columns
@@ -734,6 +842,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             ...     a: int
             ...     b: int
             ...     c: int
+            ...
 
             >>> MyModel.select("a").columns
             ['a']
@@ -773,6 +882,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             ...     a: int
             ...     b: int
             ...     c: int
+            ...
 
             >>> MyModel.drop("c").columns
             ['a', 'b']
@@ -806,6 +916,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             >>> class MyModel(Model):
             ...     a: int
             ...     b: int
+            ...
 
             >>> MyModel.prefix("x_").columns
             ['x_a', 'x_b']
@@ -832,6 +943,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             >>> class MyModel(Model):
             ...     a: int
             ...     b: int
+            ...
 
             >>> MyModel.suffix("_x").columns
             ['a_x', 'b_x']
@@ -861,6 +973,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             >>> class MyModel(Model):
             ...     a: int
             ...     b: int
+            ...
 
             >>> MyModel.rename({"a": "A"}).columns
             ['b', 'A']
@@ -903,9 +1016,11 @@ class Model(BaseModel, metaclass=ModelMetaclass):
         Examples:
             >>> class MyModel(Model):
             ...     a: int
+            ...
 
             >>> class ExpandedModel(MyModel):
             ...     b: int
+            ...
 
             >>> MyModel.with_fields(b=(int, ...)).columns == ExpandedModel.columns
             True
