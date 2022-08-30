@@ -347,7 +347,6 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
         Examples:
             >>> import patito as pt
-            >>> import polars as pl
 
 
             >>> class Product(pt.Model):
@@ -356,14 +355,14 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             ...     is_for_sale: bool
             ...
 
-            >>> df = pl.DataFrame(
+            >>> df = pt.DataFrame(
             ...     {
             ...         "product_id": [1, 1, 3],
             ...         "temperature_zone": ["dry", "dry", "oven"],
             ...     }
-            ... )
+            ... ).set_model(Product)
             >>> try:
-            ...     Product.validate(df)
+            ...     df.validate()
             ... except pt.ValidationError as exc:
             ...     print(exc)
             ...
