@@ -82,6 +82,21 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "blackdoc"
+version = "0.3.6"
+description = "run black on documentation code snippets"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+black = "*"
+importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
+more-itertools = "*"
+pathspec = "*"
+tomli = "*"
+
+[[package]]
 name = "certifi"
 version = "2022.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -156,7 +171,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "duckdb"
-version = "0.4.1.dev1777"
+version = "0.4.1.dev2356"
 description = "DuckDB embedded database"
 category = "main"
 optional = true
@@ -379,6 +394,14 @@ description = "McCabe checker, plugin for flake8"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "more-itertools"
+version = "8.14.0"
+description = "More routines for operating on iterables, beyond itertools"
+category = "dev"
+optional = false
+python-versions = ">=3.5"
 
 [[package]]
 name = "mypy"
@@ -1000,7 +1023,7 @@ pandas = ["pandas"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "086267d4f82145390aa9cbd8e0b775a4929961af79d7de82c873a1c5e9316c6b"
+content-hash = "2c3c8169c5dc39319e224b2ae8c7ef27c3817fb0c40bca03aa79102f94745694"
 
 [metadata.files]
 alabaster = [
@@ -1039,6 +1062,7 @@ black = [
     {file = "black-22.6.0-py3-none-any.whl", hash = "sha256:ac609cf8ef5e7115ddd07d85d988d074ed00e10fbc3445aee393e70164a2219c"},
     {file = "black-22.6.0.tar.gz", hash = "sha256:6c6d39e28aed379aec40da1c65434c77d75e65bb59a1e1c283de545fb4e7c6c9"},
 ]
+blackdoc = []
 certifi = []
 charset-normalizer = []
 click = [
@@ -1154,6 +1178,7 @@ mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
 ]
+more-itertools = []
 mypy = []
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},

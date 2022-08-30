@@ -94,7 +94,7 @@ def test_database_create_table():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'test_table': Constraint Error:.*"
+            "Failed to insert into table 'test_table': "
             "NOT NULL constraint failed: test_table.int_column"
         ),
     ):
@@ -146,7 +146,7 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'enum_table': Constraint Error:.*"
+            "Failed to insert into table 'enum_table': "
             "NOT NULL constraint failed: enum_table.non_nullable_enum_column"
         ),
     ):
@@ -159,7 +159,7 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'enum_table': Conversion Error:.*"
+            ".*Failed to insert into table 'enum_table': "
             "Could not convert string 'd' to UINT8"
         ),
     ):
@@ -172,7 +172,7 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'enum_table': Conversion Error:.*"
+            ".*Failed to insert into table 'enum_table': "
             "Could not convert string 'd' to UINT8"
         ),
     ):

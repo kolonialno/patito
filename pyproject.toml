@@ -49,6 +49,7 @@ sphinx-rtd-theme = "*"
 sphinx-autobuild = "*"
 sphinx-autodoc-typehints = "*"
 codecov = "^2.1.12"
+blackdoc = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
