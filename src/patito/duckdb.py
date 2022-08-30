@@ -147,21 +147,73 @@ class Relation(Generic[ModelType]):
         model: Optional[Type[ModelType]] = None,
     ) -> None:
         """
-        Wrap around the given DuckDB Relation object associated with the given database.
+        Create a new relation object containing data to be queried with DuckDB.
 
         Args:
             derived_from: Data to be represented as a DuckDB relation object.
                 Can be one of the following types:
+
                 - A pandas or polars DataFrame.
-                - A Path object pointing to a CSV or a parquet file.
-                - A SQL query represented as a string.
-                - A native DuckDB relation object.
-                - A patito.Relation object.
-            database: Associated database which will be queried/mutated if relation is
-                executed.
-            model: Sub-class of patito.Model which specifies how to deserialize rows
-                when fetched with methods such as .get() and __iter__() and how table
+                - An SQL query represented as a string.
+                - A ``Path`` object pointing to a CSV or a parquet file.
+                  The path must point to an existing file with either a ``.csv``
+                  or ``.parquet`` file extension.
+                - A native DuckDB relation object (``duckdb.DuckDBPyRelation``).
+                - A ``patito.Relation`` object.
+
+            database: Which database to load the relation into. If not provided,
+                the default DuckDB database will be used.
+
+            model: Sub-class of ``patito.Model`` which specifies how to deserialize rows
+                when fetched with methods such as :ref:`Relation.get()<Relation.get>`
+                and ``__iter__()``.
+
+                Will also be used to create a strict table schema if
+                :ref:`Relation.create_table()<Relation.create_table>`.
                 schema should be constructed.
+
+                If not provided, a dynamic model fitting the relation schema will be created
+                when required.
+
+                Can also be set later dynamically by invoking
+                :ref:`Relation.set_model()<Relation.set_model>`.
+
+        Raises:
+            ValueError: If any one of the following cases are encountered:
+
+                - If a provided ``Path`` object does not have a ``.csv`` or
+                  ``.parquet`` file extension.
+                - If a database and relation object is provided, but the relation object
+                  does not belong to the database.
+
+            TypeError: If the type of ``derived_from`` is not supported.
+
+        Examples:
+            Instantiated from a dataframe:
+
+            >>> import patito as pt
+            >>> df = pt.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+            >>> pt.Relation(df).filter("a > 2").to_df()
+            shape: (1, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i64 ┆ i64 │
+            ╞═════╪═════╡
+            │ 3   ┆ 6   │
+            └─────┴─────┘
+
+            Instantiated from an SQL query:
+
+            >>> pt.Relation("select 1 as a, 2 as b").to_df()
+            shape: (1, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i32 ┆ i32 │
+            ╞═════╪═════╡
+            │ 1   ┆ 2   │
+            └─────┴─────┘
         """
         import duckdb
 
@@ -196,9 +248,9 @@ class Relation(Generic[ModelType]):
         elif isinstance(derived_from, pl.DataFrame):
             relation = self.database.connection.from_arrow(derived_from.to_arrow())
         elif isinstance(derived_from, Path):
-            if derived_from.suffix == ".parquet":
+            if derived_from.suffix.lower() == ".parquet":
                 relation = self.database.connection.from_parquet(str(derived_from))
-            elif derived_from.suffix == ".csv":
+            elif derived_from.suffix.lower() == ".csv":
                 relation = self.database.connection.from_csv_auto(str(derived_from))
             else:
                 raise ValueError(
@@ -395,7 +447,14 @@ class Relation(Generic[ModelType]):
 
     @property
     def columns(self) -> List[str]:
-        """Return the columns of the relation as a list of strings."""
+        """
+        Return the columns of the relation as a list of strings.
+
+        Examples:
+            >>> import patito as pt
+            >>> pt.Relation("select 1 as a, 2 as b").columns
+            ['a', 'b']
+        """
         # Under certain specific circumstances columns are suffixed with
         # :1, which need to be removed from the column name.
         return [column.partition(":")[0] for column in self._relation.columns]
@@ -680,7 +739,18 @@ class Relation(Generic[ModelType]):
 
     @property
     def sql_types(self) -> dict[str, str]:
-        """Return column name -> DuckDB SQL type dictionary mapping."""
+        """
+        Return the SQL types of all the columns of the given relation.
+
+        Returns:
+            A dictionary where the keys are the column names and the values are SQL
+            types as strings.
+
+        Examples:
+            >>> import patito as pt
+            >>> pt.Relation("select 1 as a, 'my_value' as b").sql_types
+            {'a': 'INTEGER', 'b': 'VARCHAR'}
+        """
         return dict(zip(self.columns, self._relation.types))
 
     def to_pandas(self) -> "pd.DataFrame":

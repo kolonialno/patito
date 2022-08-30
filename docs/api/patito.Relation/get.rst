@@ -1,3 +1,4 @@
+.. _Relation.get:
 patito.Relation.get
 ===================
 
