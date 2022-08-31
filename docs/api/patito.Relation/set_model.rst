@@ -1,4 +1,5 @@
 .. _Relation.set_model:
+
 patito.Relation.set_model
 =========================
 

@@ -1582,7 +1582,7 @@ class Database:
         Return the default DuckDB database.
 
         Returns:
-            A patito :ref:`Database` object wrapping around the given
+            A patito :ref:`Database<Database>` object wrapping around the given
             connection.
 
         Example:

@@ -1,4 +1,5 @@
 .. _Database:
+
 patito.Database
 ===============
 

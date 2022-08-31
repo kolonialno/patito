@@ -1,5 +1,7 @@
-patito.Relation.alias
-=====================
+.. _Relation.set_alias:
+
+patito.Relation.set_alias
+=========================
 
 .. currentmodule:: patito
 

@@ -37,6 +37,7 @@ Methods
    left_join <left_join>
    project <project>
    rename <rename>
+   set_alias <set_alias>
    set_model <set_model>
    to_df <to_df>
    to_pandas <to_pandas>
