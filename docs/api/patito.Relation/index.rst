@@ -1,3 +1,5 @@
+.. _Relation.__init__:
+
 patito.Relation
 ===============
 

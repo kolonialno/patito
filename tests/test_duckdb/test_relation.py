@@ -161,9 +161,9 @@ def test_relation():
         }
     )
     assert (
-        left_relation.inner_join(
-            right_relation,
-            on="left_foreign_key = right_primary_key",
+        left_relation.set_alias("l").inner_join(
+            right_relation.set_alias("r"),
+            on="l.left_foreign_key = r.right_primary_key",
         )
         == joined_table
     )
@@ -177,9 +177,9 @@ def test_relation():
         }
     )
     assert (
-        left_relation.left_join(
-            right_relation,
-            on="left_foreign_key = right_primary_key",
+        left_relation.set_alias("l").left_join(
+            right_relation.set_alias("r"),
+            on="l.left_foreign_key = r.right_primary_key",
         )
         == left_joined_table
     )
