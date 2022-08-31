@@ -529,6 +529,17 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             >>> df.get(pl.col("product_id") == 1)
             UntypedRow(product_id=1, price=10)
 
+            If a Patito model has been associated with the dataframe, by the use of
+            :ref:`DataFrame.set_model()<DataFrame.set_model>`, then the given model will
+            be used to represent the return type:
+
+            >>> class Product(pt.Model):
+            ...     product_id: int = pt.Field(unique=True)
+            ...     price: float
+            ...
+            >>> df.set_model(Product).get(pl.col("product_id") == 1)
+            Product(product_id=1, price=10.0)
+
             You can invoke ``.get()`` without any arguments on dataframes containing
             exactly one row:
 

@@ -1,3 +1,4 @@
+.. _Relation.filter:
 patito.Relation.filter
 ======================
 
