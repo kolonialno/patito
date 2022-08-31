@@ -1086,13 +1086,27 @@ class Database:
         **kwargs: Any,  # noqa: ANN401
     ) -> None:
         """
-        Instantiate a new in-memory DuckDB database.
+        Instantiate a new DuckDB database, either persisted to disk or in-memory.
 
         Args:
-            path: Optional path to store all the data to. If None, the data is persisted
-                in-memory only.
+            path: Optional path to store all the data to. If ``None`` the data is
+                persisted in-memory only.
             read_only: If the database connection should be a read-only connection.
-            **kwargs: Additional keywords forwarded to duckdb.connect(...).
+            **kwargs: Additional keywords forwarded to ``duckdb.connect()``.
+
+        Examples:
+            >>> import patito as pt
+            >>> db = pt.Database()
+            >>> db.to_relation("select 1 as a, 2 as b").create_table("my_table")
+            >>> db.query("select * from my_table").to_df()
+            shape: (1, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i32 ┆ i32 │
+            ╞═════╪═════╡
+            │ 1   ┆ 2   │
+            └─────┴─────┘
         """
         import duckdb
 
@@ -1110,7 +1124,21 @@ class Database:
         Return the default DuckDB database.
 
         Returns:
-            A Database object wrapping around the given connection.
+            A patito :ref:`Database` object wrapping around the given
+            connection.
+
+        Example:
+            >>> import patito as pt
+            >>> db = pt.Database.default()
+            >>> db.query("select 1 as a, 2 as b").to_df()
+            shape: (1, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i32 ┆ i32 │
+            ╞═════╪═════╡
+            │ 1   ┆ 2   │
+            └─────┴─────┘
         """
         import duckdb
 
@@ -1122,10 +1150,17 @@ class Database:
         Create database from native DuckDB connection object.
 
         Args:
-            connection: A native DuckDB connection object created with duckdb.connect().
+            connection: A native DuckDB connection object created with
+                ``duckdb.connect()``.
 
         Returns:
-            A Database object wrapping around the given connection.
+            A :ref:`Database<Database>` object wrapping around the given connection.
+
+        Example:
+            >>> import duckdb
+            >>> import patito as pt
+            >>> connection = duckdb.connect()
+            >>> database = pt.Database.from_connection(connection)
         """
         obj = cls.__new__(cls)
         obj.connection = connection
@@ -1139,10 +1174,38 @@ class Database:
         """
         Create a new relation object based on data source.
 
+        The given data will be represented as a relation associated with the database.
+        ``Database(x).to_relation(y)`` is equivalent to
+        ``Relation(y, database=Database(x))``.
+
         Args:
-            derived_from (RelationSource): One of either a pandas DataFrame,
-                a pathlib.Path to a parquet or CSV file, a SQL query string,
-                or an existing relation.
+            derived_from (RelationSource): One of either a polars or pandas
+                ``DataFrame``, a ``pathlib.Path`` to a parquet or CSV file, a SQL query
+                string, or an existing relation.
+
+        Example:
+            >>> import patito as pt
+            >>> db = pt.Database()
+            >>> db.to_relation("select 1 as a, 2 as b").to_df()
+            shape: (1, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i32 ┆ i32 │
+            ╞═════╪═════╡
+            │ 1   ┆ 2   │
+            └─────┴─────┘
+            >>> db.to_relation(pt.DataFrame({"c": [3, 4], "d": ["5", "6"]})).to_df()
+            shape: (2, 2)
+            ┌─────┬─────┐
+            │ c   ┆ d   │
+            │ --- ┆ --- │
+            │ i64 ┆ str │
+            ╞═════╪═════╡
+            │ 3   ┆ 5   │
+            ├╌╌╌╌╌┼╌╌╌╌╌┤
+            │ 4   ┆ 6   │
+            └─────┴─────┘
         """
         return Relation(
             derived_from=derived_from,
@@ -1151,11 +1214,40 @@ class Database:
 
     def empty_relation(self, schema: Type[ModelType]) -> Relation[ModelType]:
         """
-        Create relation with zero rows, but correct schema that matches the model.
+        Create relation with zero rows, but correct schema that matches the given model.
 
         Args:
             schema: A patito model which specifies the column names and types of the
                 given relation.
+
+        Example:
+            >>> import patito as pt
+            >>> class Schema(pt.Model):
+            ...     string_column: str
+            ...     bool_column: bool
+            ...
+            >>> db = pt.Database()
+            >>> empty_relation = db.empty_relation(Schema)
+            >>> empty_relation.to_df()
+            shape: (0, 2)
+            ┌───────────────┬─────────────┐
+            │ string_column ┆ bool_column │
+            │ ---           ┆ ---         │
+            │ str           ┆ bool        │
+            ╞═══════════════╪═════════════╡
+            └───────────────┴─────────────┘
+            >>> non_empty_relation = db.query(
+            ...     "select 'dummy' as string_column, true as bool_column"
+            ... )
+            >>> non_empty_relation.union(empty_relation).to_df()
+            shape: (1, 2)
+            ┌───────────────┬─────────────┐
+            │ string_column ┆ bool_column │
+            │ ---           ┆ ---         │
+            │ str           ┆ bool        │
+            ╞═══════════════╪═════════════╡
+            │ dummy         ┆ true        │
+            └───────────────┴─────────────┘
         """
         return self.to_relation(schema.examples()).limit(0)
 
@@ -1165,13 +1257,32 @@ class Database:
         model: Type[ModelType],
     ) -> Relation[ModelType]:
         """
-        Create table with schema matching the provided model.
+        Create table with schema matching the provided Patito model.
+
+        See :ref:`Relation.insert_into()<Relation.insert_into>` for how to insert data
+        into the table after creation.
+        The :ref:`Relation.create_table()<Relation.create_table>` method can also be
+        used to create a table from a given relation `and` insert the data at the same
+        time.
 
         Args:
-            name: Name of new table.
-            model: Pydantic-derived model indicating names and types of table columns.
+            name: Name of new database table.
+            model (Type[Model]): Patito model indicating names and types of table
+                columns.
         Returns:
-            relation (Relation[ModelType]): Relation pointing to the new table.
+            Relation[ModelType]: Relation pointing to the new table.
+
+        Example:
+            >>> from typing import Optional
+            >>> import patito as pt
+            >>> class MyModel(pt.Model):
+            ...     str_column: str
+            ...     nullable_string_column: Optional[str]
+            ...
+            >>> db = pt.Database()
+            >>> db.create_table(name="my_table", model=MyModel)
+            >>> db.table("my_table").sql_types
+            {'str_column': 'VARCHAR', 'nullable_string_column': 'VARCHAR'}
         """
         self.create_enum_types(model=model)
         schema = model.schema()
@@ -1188,11 +1299,21 @@ class Database:
 
     def create_enum_types(self, model: Type[ModelType]) -> None:
         """
-        Declare SQL enum types in DuckDB database.
+        Define SQL enum types in DuckDB database.
 
         Args:
-            model: Model for which all Literal-annotated string fields
+            model: Model for which all Literal-annotated or enum-annotated string fields
                 will get respective DuckDB enum types.
+
+        Example:
+            >>> import patito as pt
+            >>> class EnumModel(pt.Model):
+            ...     enum_column: Literal["A", "B", "C"]
+            ...
+            >>> db = pt.Database()
+            >>> db.create_enum_types(EnumModel)
+            >>> db.enum_types
+            {'enum__7ba49365cc1b0fd57e61088b3bc9aa25'}
         """
         for props in model._schema_properties().values():
             if "enum" not in props or props["type"] != "string":
@@ -1248,7 +1369,21 @@ class Database:
             return getattr(self.connection, name)
 
     def __contains__(self, table: str) -> bool:
-        """Return True if the database contains a table with the given name."""
+        """
+        Return ``True`` if the database contains a table with the given name.
+
+        Args:
+            table: The name of the table to be checked for.
+
+        Examples:
+            >>> import patito as pt
+            >>> db = pt.Database()
+            >>> "my_table" in db
+            False
+            >>> db.to_relation("select 1 as a, 2 as b").create_table(name="my_table")
+            >>> "my_table" in db
+            True
+        """
         try:
             self.connection.table(table_name=table)
             return True
