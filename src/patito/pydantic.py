@@ -528,8 +528,8 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             dataframe: Polars DataFrame to be validated.
 
         Raises:
-            patito.exceptions.ValidationError:
-                If the given dataframe does not match the given schema.
+            patito.exceptions.ValidationError: If the given dataframe does not match
+                the given schema.
 
         Examples:
             >>> import patito as pt

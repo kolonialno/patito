@@ -508,9 +508,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             RowDoesNotExist: If zero rows evaluate to true for the given predicate.
             MultipleRowsReturned: If more than one row evaluates to true for the given
                 predicate.
-            RuntimeError:
-                The superclass of both ``RowDoesNotExist`` and ``MultipleRowsReturned``
-                if you want to catch both exceptions with the same class.
+            RuntimeError: The superclass of both ``RowDoesNotExist`` and
+                ``MultipleRowsReturned`` if you want to catch both exceptions with the
+                same class.
 
         Args:
             predicate: A polars expression defining the criteria of the filter.
@@ -601,7 +601,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     @classmethod
     def read_csv(cls: Type[DF], *args, **kwargs) -> DF:  # noqa: ANN
-        """
+        r"""
         Read CSV and apply correct column name and types from model.
 
         If any fields have ``derived_from`` specified, the given expression will be used
@@ -645,7 +645,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             ...     a: float
             ...     b: str = pt.Field(derived_from="source_of_b")
             ...
-            >>> csv_file = io.StringIO("a,source_of_b\\n1,1")
+            >>> csv_file = io.StringIO("a,source_of_b\n1,1")
             >>> CSVModel.DataFrame.read_csv(csv_file).drop()
             shape: (1, 2)
             ┌─────┬─────┐
