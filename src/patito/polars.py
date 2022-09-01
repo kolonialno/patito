@@ -486,10 +486,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             └────────┴───────┘
         """
         if strategy != "defaults":  # pragma: no cover
-            return cast(
-                DF,
-                super().fill_null(value=value, strategy=strategy, limit=limit),
-            )
+            return super().fill_null(value=value, strategy=strategy, limit=limit)
         return self.with_columns(
             [
                 pl.col(column).fill_null(pl.lit(default_value))
@@ -677,7 +674,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         self: DF,
         exprs: Union[str, pl.Expr, pl.Series, Sequence[Union[str, pl.Expr, pl.Series]]],
     ) -> DF:
-        return cast(DF, super().select(exprs=exprs))
+        return super().select(exprs=exprs)
 
     def with_column(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
         return cast(DF, super().with_column(column=column))
