@@ -89,7 +89,22 @@ profile = "black"
 exclude = ["noxfile.py"]
 
 [tool.mypy]
-# TODO: Remove once DuckDB wrapper becomes public API
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+strict_optional = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+allow_redefinition = true
+show_error_codes = true
 exclude = [
-  "src/patito/duckdb.py",
+  "noxfile.py",
 ]
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "noxfile"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

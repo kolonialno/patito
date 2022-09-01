@@ -60,7 +60,7 @@ class LazyFrame(pl.LazyFrame, Generic[ModelType]):
 
         new_class = type(
             f"{model.schema()['title']}LazyFrame",
-            (cls,),  # type: ignore
+            (cls,),
             {"model": model},
         )
         return new_class
@@ -148,7 +148,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         """
         new_class = type(
             f"{model.schema()['title']}DataFrame",
-            (cls,),  # type: ignore
+            (cls,),
             {"model": model},
         )
         return new_class
@@ -170,7 +170,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         ldf = lazyframe_class._from_pyldf(super().lazy()._ldf)
         return ldf
 
-    def set_model(self, model):  # noqa: ANN001, ANN201
+    def set_model(self, model):  # type: ignore[no-untyped-def] # noqa: ANN001, ANN201
         """
         Associate a given patito ``Model`` with the dataframe.
 
@@ -234,7 +234,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         cls = self._construct_dataframe_model_class(model=model)
         return cast(
             DataFrame[model],
-            cls._from_pydf(self._df),  # type: ignore
+            cls._from_pydf(self._df),
         )
 
     def cast(self: DF, strict: bool = False) -> DF:
@@ -600,7 +600,11 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         )
 
     @classmethod
-    def read_csv(cls: Type[DF], *args, **kwargs) -> DF:  # noqa: ANN
+    def read_csv(  # type: ignore[no-untyped-def]
+        cls: Type[DF],
+        *args,  # noqa: ANN002
+        **kwargs,  # noqa: ANN003
+    ) -> DF:
         r"""
         Read CSV and apply correct column name and types from model.
 

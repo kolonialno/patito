@@ -4,7 +4,7 @@ Module which wraps around the duckdb module in an opiniated manner.
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable, Iterator
+from collections.abc import Collection, Iterable, Iterator
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -24,7 +24,7 @@ from typing import (
 
 import numpy as np
 import polars as pl
-import pyarrow as pa
+import pyarrow as pa  # type: ignore
 from pydantic import create_model
 from typing_extensions import Literal
 
@@ -86,8 +86,12 @@ DuckDBSQLType = Literal[
 ]
 
 # Used for backward-compatible patches
+POLARS_VERSION: Optional[Tuple[int, int, int]]
 try:
-    POLARS_VERSION = tuple(map(int, pl.__version__.split(".")))
+    POLARS_VERSION = cast(
+        Tuple[int, int, int],
+        tuple(map(int, pl.__version__.split("."))),
+    )
 except ValueError:
     POLARS_VERSION = None
 
@@ -95,7 +99,7 @@ except ValueError:
 def create_pydantic_model(relation: "duckdb.DuckDBPyRelation") -> Type[Model]:
     """Create pydantic model deserialization of the given relation."""
     pydantic_annotations = {column: (Any, ...) for column in relation.columns}
-    return create_model(
+    return create_model(  # type: ignore
         relation.alias,
         __base__=Model,
         **pydantic_annotations,
@@ -132,6 +136,12 @@ def _is_missing_enum_type_exception(exception: BaseException) -> bool:
 
 
 class Relation(Generic[ModelType]):
+    # The database connection which the given relation belongs to
+    database: Database
+
+    # The underlying DuckDB relation object which this class wraps around
+    _relation: duckdb.DuckDBPyRelation
+
     # Can be set by subclasses in order to specify the serialization class for rows.
     # Must accept column names as keyword arguments.
     model: Optional[Type[ModelType]] = None
@@ -244,7 +254,7 @@ class Relation(Generic[ModelType]):
             # We must replace pd.NA with np.nan in order for it to be considered
             # as null by DuckDB. Otherwise it will casted to the string <NA>
             # or even segfault.
-            derived_from = cast(pd.DataFrame, derived_from).fillna(np.nan)
+            derived_from = derived_from.fillna(np.nan)
             relation = self.database.connection.from_df(derived_from)
         elif isinstance(derived_from, pl.DataFrame):
             relation = self.database.connection.from_arrow(derived_from.to_arrow())
@@ -262,7 +272,7 @@ class Relation(Generic[ModelType]):
 
         self._relation = relation
         if model is not None:
-            self.model = cast(Type[ModelType], model)
+            self.model = model  # pyright: ignore
 
     def aggregate(
         self,
@@ -321,8 +331,8 @@ class Relation(Generic[ModelType]):
     def add_suffix(
         self,
         suffix: str,
-        include: Optional[Iterable[str]] = None,
-        exclude: Optional[Iterable[str]] = None,
+        include: Optional[Collection[str]] = None,
+        exclude: Optional[Collection[str]] = None,
     ) -> Relation:
         """
         Add a suffix to all the columns of the relation.
@@ -371,9 +381,9 @@ class Relation(Generic[ModelType]):
         if include is not None and exclude is not None:
             raise TypeError("Both include and exclude provided at the same time!")
         elif include is not None:
-            included = lambda column: column in include  # noqa: E731
+            included = lambda column: column in include
         elif exclude is not None:
-            included = lambda column: column not in exclude  # noqa: E731
+            included = lambda column: column not in exclude
         else:
             included = lambda _: True  # noqa: E731
 
@@ -437,11 +447,11 @@ class Relation(Generic[ModelType]):
         if include is not None and exclude is not None:
             raise TypeError("Both include and exclude provided at the same time!")
         elif include is not None:
-            included = lambda column: column in include  # noqa: E731
+            included = lambda column: column in include
         elif exclude is not None:
-            included = lambda column: column not in exclude  # noqa: E731
+            included = lambda column: column not in cast(Collection[str], exclude)
         else:
-            included = lambda _: True  # noqa: E731
+            included = lambda _: True
 
         return self.project(
             ", ".join(
@@ -610,7 +620,7 @@ class Relation(Generic[ModelType]):
                 projections.append(f"coalesce({column}, {expression!r}) as {column}")
             else:
                 projections.append(column)
-        return self.project(*projections)
+        return cast(RelationType, self.project(*projections))
 
     @property
     def columns(self) -> List[str]:
@@ -682,7 +692,7 @@ class Relation(Generic[ModelType]):
             self.insert_into(table_name=name)
         else:
             self._relation.create(table_name=name)
-        return self.database.table(name)
+        return cast(RelationType, self.database.table(name))
 
     def drop(self, *columns: str) -> Relation:
         """
@@ -804,14 +814,14 @@ class Relation(Generic[ModelType]):
         if row is None or result.fetchone() is not None:
             args = [repr(f) for f in filters]
             args.extend(f"{key}={value!r}" for key, value in equalities.items())
-            args = ",".join(args)
+            args_string = ",".join(args)
 
             num_rows = relation.count()
             if num_rows == 0:
-                raise RowDoesNotExist(f"Relation.get({args}) returned 0 rows!")
+                raise RowDoesNotExist(f"Relation.get({args_string}) returned 0 rows!")
             else:
                 raise MultipleRowsReturned(
-                    f"Relation.get({args}) returned {num_rows} rows!"
+                    f"Relation.get({args_string}) returned {num_rows} rows!"
                 )
         return self._to_model(row=row)
 
@@ -886,7 +896,7 @@ class Relation(Generic[ModelType]):
         if not filters and not equalities:
             return self
 
-        clauses = []
+        clauses: List[str] = []
         if filters:
             clauses.extend(filters)
         if equalities:
@@ -1122,7 +1132,7 @@ class Relation(Generic[ModelType]):
 
         projection = ", ".join(
             expanded_projections
-            + list(  # type: ignore
+            + list(  # pyright: ignore
                 f"{expression} as {column_name}"
                 for column_name, expression in named_projections.items()
             )
@@ -1165,7 +1175,7 @@ class Relation(Generic[ModelType]):
             │ 1   ┆ 2   │
             └─────┴─────┘
         """
-        existing_columns = self.columns
+        existing_columns = set(self.columns)
         missing = set(columns.keys()) - set(existing_columns)
         if missing:
             raise ValueError(
@@ -1216,7 +1226,7 @@ class Relation(Generic[ModelType]):
             schema_change=False,
         )
 
-    def set_model(self, model):  # noqa: ANN
+    def set_model(self, model):  # type: ignore[no-untyped-def] # noqa: ANN
         """
         Associate a give Patito model with the relation.
 
@@ -1291,7 +1301,7 @@ class Relation(Generic[ModelType]):
                0       1
                1       2
         """
-        return cast("pd.DataFrame", self._relation.to_df())
+        return self._relation.to_df()
 
     def to_df(self) -> DataFrame:
         """
@@ -1366,7 +1376,7 @@ class Relation(Generic[ModelType]):
                 f"{self.__class__.__name__}.to_series() was invoked on a relation with "
                 f"{len(self._relation.columns)} columns, while exactly 1 is required!"
             )
-        dataframe = DataFrame._from_arrow(self._relation.to_arrow_table())
+        dataframe: DataFrame = DataFrame._from_arrow(self._relation.to_arrow_table())
         return dataframe.to_series(index=0).alias(name=self.columns[0])
 
     def union(self: RelationType, other: RelationSource) -> RelationType:
@@ -1654,9 +1664,9 @@ class Relation(Generic[ModelType]):
         """
         return self.union(other)
 
-    def __eq__(self, other: RelationSource) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check if Relation is equal to a Relation-able data source."""
-        other_relation = self.database.to_relation(other)
+        other_relation = self.database.to_relation(other)  # type: ignore
         # Check if the number of rows are equal, and then check if each row is equal.
         # Use zip(self, other_relation, strict=True) when we upgrade to Python 3.10.
         return self.count() == other_relation.count() and all(
@@ -1922,9 +1932,6 @@ class Database:
     # Method for executing arbitrary select queries which return relations
     query: Callable[[str], Relation]
 
-    # Method for extracting a relation referring to a table
-    table: Callable[[str], Relation]
-
     # Types created in order to represent enum strings
     enum_types: Set[str]
 
@@ -2100,6 +2107,33 @@ class Database:
         """
         return self.to_relation(schema.examples()).limit(0)
 
+    def table(self, name: str) -> Relation:
+        """
+        Return relation representing all the data in the given table.
+
+        Args:
+            name: The name of the table.
+
+        Example:
+            >>> import patito as pt
+            >>> df = pt.DataFrame({"a": [1, 2], "b": [3, 4]})
+            >>> db = pt.Database()
+            >>> relation = db.to_relation(df)
+            >>> relation.create_table(name="my_table")
+            >>> db.table("my_table").to_df()
+            shape: (2, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i64 ┆ i64 │
+            ╞═════╪═════╡
+            │ 1   ┆ 3   │
+            ├╌╌╌╌╌┼╌╌╌╌╌┤
+            │ 2   ┆ 4   │
+            └─────┴─────┘
+        """
+        return Relation(self.connection.table(name))
+
     def create_table(
         self,
         name: str,
@@ -2144,7 +2178,7 @@ class Database:
             columns.append(column)
         self.connection.execute(f"create table {name} ({','.join(columns)})")
         # TODO: Fix typing
-        return self.table(name).set_model(model)  # type: ignore
+        return self.table(name).set_model(model)  # pyright: ignore
 
     def create_enum_types(self, model: Type[ModelType]) -> None:
         """

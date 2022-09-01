@@ -117,7 +117,7 @@ def test_database_create_table():
         "VARCHAR",
         "BOOLEAN",
         "BOOLEAN",
-        pt.duckdb._enum_type_name(  # type: ignore
+        pt.duckdb._enum_type_name(  # pyright: ignore
             field_properties=Model.schema()["properties"]["enum_column"]
         ),
     ]

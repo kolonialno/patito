@@ -73,7 +73,7 @@ class ModelMetaclass(PydanticModelMetaclass):
             bases: Tuple of superclasses.
             clsdict: Dictionary containing class properties.
         """
-        super().__init__(name, bases, clsdict)  # type: ignore
+        super().__init__(name, bases, clsdict)
         # Add a custom subclass of patito.DataFrame to the model class,
         # where .set_model() has been implicitly set.
         cls.DataFrame = DataFrame._construct_dataframe_model_class(
@@ -400,12 +400,12 @@ class Model(BaseModel, metaclass=ModelMetaclass):
 
     @classmethod
     @property
-    def DataFrame(cls: Type[ModelType]) -> Type[DataFrame[ModelType]]:  # type: ignore
+    def DataFrame(cls: Type[ModelType]) -> Type[DataFrame[ModelType]]:
         """Return DataFrame class where DataFrame.set_model() is set to self."""
 
     @classmethod
     @property
-    def LazyFrame(cls: Type[ModelType]) -> Type[LazyFrame[ModelType]]:  # type: ignore
+    def LazyFrame(cls: Type[ModelType]) -> Type[LazyFrame[ModelType]]:
         """Return DataFrame class where DataFrame.set_model() is set to self."""
 
     @classmethod
@@ -450,8 +450,8 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             dataframe = row
         elif _PANDAS_AVAILABLE and isinstance(row, pd.DataFrame):
             dataframe = pl.DataFrame._from_pandas(row)
-        elif _PANDAS_AVAILABLE and isinstance(row, pd.Series):
-            return cls(**dict(row.iteritems()))
+        elif _PANDAS_AVAILABLE and isinstance(row, pd.Series):  # type: ignore[unreachable]
+            return cls(**dict(row.iteritems()))  # type: ignore[unreachable]
         else:
             raise TypeError(f"{cls.__name__}.from_row not implemented for {type(row)}.")
         return cls.from_polars(dataframe=dataframe, validate=validate)
@@ -517,7 +517,7 @@ class Model(BaseModel, metaclass=ModelMetaclass):
             return cls.construct(**dataframe.to_dicts()[0])
 
     @classmethod
-    def validate(  # type: ignore
+    def validate(
         cls,
         dataframe: Union["pd.DataFrame", pl.DataFrame],
     ) -> None:

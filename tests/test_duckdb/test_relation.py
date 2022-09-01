@@ -381,12 +381,12 @@ def test_relation_union_method():
         TypeError,
         match="Union between relations with different column names is not allowed.",
     ):
-        incompatible + right  # type: ignore
+        incompatible + right  # pyright: ignore
     with pytest.raises(
         TypeError,
         match="Union between relations with different column names is not allowed.",
     ):
-        left + incompatible  # type: ignore
+        left + incompatible  # pyright: ignore
 
 
 def test_relation_model_functionality():
@@ -733,7 +733,7 @@ def test_polars_support():
 
     # Anything besides a polars dataframe should raise TypeError
     with pytest.raises(TypeError):
-        MyModel.from_polars(None)  # type: ignore
+        MyModel.from_polars(None)  # pyright: ignore
 
     # But we can also skip validation if we want
     unvalidated_model = MyModel.from_row(
