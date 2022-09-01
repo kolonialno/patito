@@ -367,7 +367,9 @@ class ModelMetaclass(PydanticModelMetaclass):
 
         types = {}
         for column, props in cls._schema_properties().items():
-            if "enum" in props:
+            if "enum" in props and all(
+                isinstance(variant, str) for variant in props["enum"]
+            ):
                 types[column] = _enum_type_name(field_properties=props)
             else:
                 types[column] = PYDANTIC_TO_DUCKDB_TYPES[props["type"]]

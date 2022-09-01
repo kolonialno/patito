@@ -92,7 +92,7 @@ try:
         Tuple[int, int, int],
         tuple(map(int, pl.__version__.split("."))),
     )
-except ValueError:
+except ValueError:  # pragma: no cover
     POLARS_VERSION = None
 
 
@@ -265,10 +265,10 @@ class Relation(Generic[ModelType]):
                 relation = self.database.connection.from_csv_auto(str(derived_from))
             else:
                 raise ValueError(
-                    f"Unsupported file suffix {derived_from.suffix} for data import!"
+                    f"Unsupported file suffix {derived_from.suffix!r} for data import!"
                 )
         else:
-            raise TypeError
+            raise TypeError  # pragma: no cover
 
         self._relation = relation
         if model is not None:
@@ -449,7 +449,7 @@ class Relation(Generic[ModelType]):
         elif include is not None:
             included = lambda column: column in include
         elif exclude is not None:
-            included = lambda column: column not in cast(Collection[str], exclude)
+            included = lambda column: column not in exclude
         else:
             included = lambda _: True
 
@@ -1139,7 +1139,7 @@ class Relation(Generic[ModelType]):
         )
         try:
             relation = self._relation.project(projection)
-        except RuntimeError as exc:
+        except RuntimeError as exc:  # pragma: no cover
             # We might get a RunTime error if the enum type has not
             # been created yet. If so, we create all enum types for
             # this model.
@@ -1326,16 +1326,6 @@ class Relation(Generic[ModelType]):
         # Here we do a star-select to work around certain weird issues with DuckDB
         self._relation = self._relation.project("*")
         arrow_table = cast(pa.lib.Table, self._relation.to_arrow_table())
-        if POLARS_VERSION and POLARS_VERSION <= (0, 13, 38):
-            # Fix for https://github.com/pola-rs/polars/issues/3500
-            schema = arrow_table.schema
-            for index, field in enumerate(schema):
-                if isinstance(field.type, pa.DictionaryType):
-                    dict_field = field.with_type(
-                        pa.dictionary(index_type=pa.int8(), value_type=pa.utf8())
-                    )
-                    schema = schema.set(index, dict_field)
-            arrow_table = arrow_table.cast(schema)
         try:
             return DataFrame._from_arrow(arrow_table)
         except pa.ArrowInvalid:  # pragma: no cover
@@ -1537,7 +1527,7 @@ class Relation(Generic[ModelType]):
             raise TypeError(
                 f"{class_name}.with_missing_default_columns() invoked without "
                 f"{class_name}.model having been set! "
-                "You should invoke {class_name}.set_model() first!"
+                f"You should invoke {class_name}.set_model() first!"
             )
         elif include is not None and exclude is not None:
             raise TypeError("Both include and exclude provided at the same time!")
@@ -1559,7 +1549,7 @@ class Relation(Generic[ModelType]):
 
         try:
             relation = self._relation.project(projection)
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover
             # We might get a RunTime error if the enum type has not
             # been created yet. If so, we create all enum types for
             # this model.
@@ -1625,7 +1615,7 @@ class Relation(Generic[ModelType]):
             raise TypeError(
                 f"{class_name}.with_missing_nullable_columns() invoked without "
                 f"{class_name}.model having been set! "
-                "You should invoke {class_name}.set_model() first!"
+                f"You should invoke {class_name}.set_model() first!"
             )
         elif include is not None and exclude is not None:
             raise TypeError("Both include and exclude provided at the same time!")
@@ -1645,7 +1635,7 @@ class Relation(Generic[ModelType]):
 
         try:
             relation = self._relation.project(projection)
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover
             # We might get a RunTime error if the enum type has not
             # been created yet. If so, we create all enum types for
             # this model.
@@ -2132,7 +2122,40 @@ class Database:
             │ 2   ┆ 4   │
             └─────┴─────┘
         """
-        return Relation(self.connection.table(name))
+        return Relation(
+            self.connection.table(name),
+            database=self.from_connection(self.connection),
+        )
+
+    def view(self, name: str) -> Relation:
+        """
+        Return relation representing all the data in the given view.
+
+        Args:
+            name: The name of the view.
+
+        Example:
+            >>> import patito as pt
+            >>> df = pt.DataFrame({"a": [1, 2], "b": [3, 4]})
+            >>> db = pt.Database()
+            >>> relation = db.to_relation(df)
+            >>> relation.create_view(view_name="my_view")
+            >>> db.view("my_view").to_df()
+            shape: (2, 2)
+            ┌─────┬─────┐
+            │ a   ┆ b   │
+            │ --- ┆ --- │
+            │ i64 ┆ i64 │
+            ╞═════╪═════╡
+            │ 1   ┆ 3   │
+            ├╌╌╌╌╌┼╌╌╌╌╌┤
+            │ 2   ┆ 4   │
+            └─────┴─────┘
+        """
+        return Relation(
+            self.connection.view(name),
+            database=self.from_connection(self.connection),
+        )
 
     def create_table(
         self,
@@ -2217,7 +2240,7 @@ class Database:
                 )
             except duckdb.CatalogException as e:
                 if "already exists" not in str(e):
-                    raise e
+                    raise e  # pragma: no cover
             self.enum_types.add(enum_type_name)
 
     def create_view(
@@ -2245,10 +2268,8 @@ class Database:
             "from_parquet",
             "from_query",
             "query",
-            "table",
             "table_function",
             "values",
-            "view",
         }
         if name in relation_methods:
             return lambda *args, **kwargs: Relation(

@@ -123,6 +123,14 @@ def test_database_create_table():
     ]
 
 
+def test_create_view():
+    """It should be able to create a view from a relation source."""
+    db = pt.Database()
+    df = pt.DataFrame({"a": [1, 2], "b": [3.0, 4.0]})
+    db.create_view(name="my_view", data=df)
+    assert db.view("my_view").to_df().frame_equal(df)
+
+
 def test_validate_non_nullable_enum_columns():
     """Enum columns should be null-validated."""
 
@@ -195,6 +203,18 @@ def test_table_existence_check():
 
     # And now the table should exist
     assert "test_table" in db
+
+
+def test_creating_enums_several_tiems():
+    """Enums should be able to be defined several times."""
+
+    class EnumModel(pt.Model):
+        enum_column: Literal["a", "b", "c"]
+
+    db = pt.Database()
+    db.create_enum_types(EnumModel)
+    db.enum_types = set()
+    db.create_enum_types(EnumModel)
 
 
 def test_use_of_same_enum_types_from_literal_annotation():
