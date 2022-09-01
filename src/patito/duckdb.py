@@ -262,7 +262,7 @@ class Relation(Generic[ModelType]):
 
         self._relation = relation
         if model is not None:
-            self.model = model
+            self.model = cast(Type[ModelType], model)
 
     def aggregate(
         self,
