@@ -23,7 +23,7 @@ from typing import (
 
 import numpy as np
 import polars as pl
-import pyarrow as pa
+import pyarrow as pa  # type: ignore
 from pydantic import create_model
 from typing_extensions import Literal
 
@@ -147,8 +147,6 @@ class Relation(Generic[ModelType]):
 
     # The alias that can be used to refer to the relation in queries
     alias: str
-    # The SQL types of the relation
-    types: List[DuckDBSQLType]
 
     def __init__(  # noqa: C901
         self,
@@ -725,7 +723,7 @@ class Relation(Generic[ModelType]):
             └────────┘
         """
         self._relation.create_view(view_name=name, replace=replace)
-        return self.database.view(name)
+        return cast(RelationType, self.database.view(name))
 
     def drop(self, *columns: str) -> Relation:
         """
@@ -1629,7 +1627,7 @@ class Relation(Generic[ModelType]):
         )
 
     @property
-    def types(self) -> dict[str, str]:
+    def types(self) -> dict[str, DuckDBSQLType]:
         """
         Return the SQL types of all the columns of the given relation.
 

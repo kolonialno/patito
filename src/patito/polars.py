@@ -182,7 +182,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
         Args:
             model (Model): Sub-class of ``patito.Model`` declaring the schema of the
-            dataframe.
+                dataframe.
 
         Returns:
             DataFrame[Model]: Returns the same dataframe, but with an attached model
@@ -343,8 +343,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             TypeError: If ``DataFrame.set_model()`` has not been invoked prior to
                 validation. Note that ``patito.Model.DataFrame`` automatically invokes
                 ``DataFrame.set_model()`` for you.
-            patito.exceptions.ValidationError:
-                If the dataframe does not match the specified schema.
+
+            patito.exceptions.ValidationError: If the dataframe does not match the
+                specified schema.
 
         Examples:
             >>> import patito as pt
@@ -487,7 +488,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             └────────┴───────┘
         """
         if strategy != "defaults":  # pragma: no cover
-            return super().fill_null(value=value, strategy=strategy, limit=limit)
+            return cast(
+                DF, super().fill_null(value=value, strategy=strategy, limit=limit)
+            )
         return self.with_columns(
             [
                 pl.col(column).fill_null(pl.lit(default_value))
@@ -675,7 +678,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         self: DF,
         exprs: Union[str, pl.Expr, pl.Series, Sequence[Union[str, pl.Expr, pl.Series]]],
     ) -> DF:
-        return super().select(exprs=exprs)
+        return cast(DF, super().select(exprs=exprs))
 
     def with_column(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
         return cast(DF, super().with_column(column=column))
