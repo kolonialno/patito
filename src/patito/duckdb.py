@@ -688,7 +688,7 @@ class Relation(Generic[ModelType]):
         """
         if self.model is not None:
             self.database.create_table(name=name, model=self.model)
-            self.insert_into(table_name=name)
+            self.insert_into(table=name)
         else:
             self._relation.create(table_name=name)
         return cast(RelationType, self.database.table(name))
@@ -1335,7 +1335,7 @@ class Relation(Generic[ModelType]):
 
     def insert_into(
         self: RelationType,
-        table_name: str,
+        table: str,
     ) -> RelationType:
         """
         Insert all rows of the relation into a given table.
@@ -1345,7 +1345,7 @@ class Relation(Generic[ModelType]):
         with the target table.
 
         Args:
-            table_name: Name of table for which to insert values into.
+            table: Name of table for which to insert values into.
 
         Returns:
             Relation: The original relation, i.e. ``self``.
@@ -1376,16 +1376,16 @@ class Relation(Generic[ModelType]):
             │ 2   │
             └─────┘
         """
-        table = self.database.table(table_name)
-        missing_columns = set(table.columns) - set(self.columns)
+        table_relation = self.database.table(table)
+        missing_columns = set(table_relation.columns) - set(self.columns)
         if missing_columns:
             raise TypeError(
                 f"Relation is missing column(s) {missing_columns} "
-                f"in order to be inserted into table '{table_name}'!",
+                f"in order to be inserted into table '{table}'!",
             )
 
-        reordered_relation = self[table.columns]
-        reordered_relation._relation.insert_into(table_name=table_name)
+        reordered_relation = self[table_relation.columns]
+        reordered_relation._relation.insert_into(table_name=table)
         return self
 
     def intersect(self: RelationType, other: RelationSource) -> RelationType:

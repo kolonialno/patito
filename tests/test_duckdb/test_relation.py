@@ -653,7 +653,7 @@ def test_with_missing_nullable_enum_columns():
     # We insert data into a properly typed table in order to get the correct enum type
     db.create_table(name="enum_table", model=EnumModel)
     db.to_relation("select 'a' as enum_column, 1 as other_column").insert_into(
-        table_name="enum_table"
+        table="enum_table"
     )
     table_relation = db.table("enum_table")
     assert table_relation.types["enum_column"].startswith("enum__")
@@ -743,7 +743,7 @@ def test_relation_insert_into():
         )
     """
     )
-    db.to_relation("select 2 as b, 1 as a").insert_into(table_name="foo")
+    db.to_relation("select 2 as b, 1 as a").insert_into(table="foo")
     row = db.table("foo").get()
     assert row.a == 1
     assert row.b == 2
@@ -755,7 +755,7 @@ def test_relation_insert_into():
             "in order to be inserted into table 'foo'!"
         ),
     ):
-        db.to_relation("select 2 as b, 1 as c").insert_into(table_name="foo")
+        db.to_relation("select 2 as b, 1 as c").insert_into(table="foo")
 
 
 def test_polars_support():

@@ -87,7 +87,7 @@ def test_database_create_table():
 
     # We insert some dummy data into the new table
     dummy_relation = db.to_relation(Model.examples({"optional_int_column": [1, None]}))
-    dummy_relation.insert_into(table_name="test_table")
+    dummy_relation.insert_into(table="test_table")
 
     # But we should not be able to insert null data in non-optional columns
     null_relation = dummy_relation.drop("int_column").project("null as int_column, *")
@@ -98,7 +98,7 @@ def test_database_create_table():
             "NOT NULL constraint failed: test_table.int_column"
         ),
     ):
-        null_relation.insert_into(table_name="test_table")
+        null_relation.insert_into(table="test_table")
 
     # Check if the correct columns and types have been set
     assert table.columns == [
@@ -158,7 +158,7 @@ def test_validate_non_nullable_enum_columns():
             "NOT NULL constraint failed: enum_table.non_nullable_enum_column"
         ),
     ):
-        invalid_relation.insert_into(table_name="enum_table")
+        invalid_relation.insert_into(table="enum_table")
 
     # The non-nullable enum column should do enum value validation
     invalid_relation = db.to_relation(
@@ -171,7 +171,7 @@ def test_validate_non_nullable_enum_columns():
             "Could not convert string 'd' to UINT8"
         ),
     ):
-        invalid_relation.insert_into(table_name="enum_table")
+        invalid_relation.insert_into(table="enum_table")
 
     # And the nullable enum column should do enum value validation
     invalid_relation = db.to_relation(
@@ -184,7 +184,7 @@ def test_validate_non_nullable_enum_columns():
             "Could not convert string 'd' to UINT8"
         ),
     ):
-        invalid_relation.insert_into(table_name="enum_table")
+        invalid_relation.insert_into(table="enum_table")
 
 
 def test_table_existence_check():
