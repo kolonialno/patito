@@ -5,4 +5,4 @@ patito.Relation.types
 
 .. currentmodule:: patito
 
-.. automethod:: Relation.types
+.. autoproperty:: Relation.types
