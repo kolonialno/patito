@@ -110,7 +110,7 @@ def test_database_create_table():
         "optional_bool_column",
         "enum_column",
     ]
-    assert table.types == [
+    assert list(table.types.values()) == [
         "BIGINT",
         "BIGINT",
         "VARCHAR",
@@ -231,8 +231,7 @@ def test_use_of_same_enum_types_from_literal_annotation():
     db.create_table(name="table_2", model=Table2)
 
     assert (
-        db.table("table_1").sql_types["column_1"]
-        == db.table("table_2").sql_types["column_2"]
+        db.table("table_1").types["column_1"] == db.table("table_2").types["column_2"]
     )
 
 
@@ -258,6 +257,27 @@ def test_use_of_same_enum_types_from_enum_annotation():
     db.create_table(name="table_2", model=Table2)
 
     assert (
-        db.table("table_1").sql_types["column_1"]
-        == db.table("table_2").sql_types["column_2"]
+        db.table("table_1").types["column_1"] == db.table("table_2").types["column_2"]
+    )
+
+
+def test_execute():
+    """It should be able to execute prepared statements."""
+    db = pt.Database()
+    db.execute("create table my_table (a int, b int, c int)")
+    db.execute("insert into my_table select ? as a, ? as b, ? as c", [2, 3, 4])
+    assert (
+        db.table("my_table")
+        .to_df()
+        .frame_equal(pt.DataFrame({"a": [2], "b": [3], "c": [4]}))
+    )
+    db.execute(
+        "insert into my_table select ? as a, ? as b, ? as c",
+        [5, 6, 7],
+        [8, 9, 10],
+    )
+    assert (
+        db.table("my_table")
+        .to_df()
+        .frame_equal(pt.DataFrame({"a": [2, 5, 8], "b": [3, 6, 9], "c": [4, 7, 10]}))
     )

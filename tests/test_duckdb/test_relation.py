@@ -124,13 +124,6 @@ def test_relation():
     ):
         table_relation.rename(a="new_name")
 
-    # Accessing non-existing attributes should raise AttributeError
-    with pytest.raises(
-        AttributeError,
-        match="Relation has no attribute 'attribute_that_does_not_exist'",
-    ):
-        table_relation.attribute_that_does_not_exist
-
     # Null values should be correctly handled
     none_df = pl.DataFrame({"column_1": [1, None]})
     none_relation = db.to_relation(none_df)
@@ -584,7 +577,7 @@ def test_fill_missing_columns():
         "e": None,
     }
     # And these nulls are properly typed
-    assert filled_nullables.sql_types == {
+    assert filled_nullables.types == {
         "a": "VARCHAR",
         "b": "VARCHAR",
         "c": "VARCHAR",
@@ -599,7 +592,7 @@ def test_fill_missing_columns():
         "b": "default_value",
         "d": 10.5,
     }
-    assert filled_defaults.sql_types == {
+    assert filled_defaults.types == {
         "a": "VARCHAR",
         "b": "VARCHAR",
         "d": "DOUBLE",
@@ -663,7 +656,7 @@ def test_with_missing_nullable_enum_columns():
         table_name="enum_table"
     )
     table_relation = db.table("enum_table")
-    assert table_relation.sql_types["enum_column"].startswith("enum__")
+    assert table_relation.types["enum_column"].startswith("enum__")
 
     # We generate another dynamic relation where we expect the correct enum type
     null_relation = (
@@ -671,17 +664,11 @@ def test_with_missing_nullable_enum_columns():
         .set_model(EnumModel)
         .with_missing_nullable_columns()
     )
-    assert (
-        null_relation.sql_types["enum_column"]
-        == table_relation.sql_types["enum_column"]
-    )
+    assert null_relation.types["enum_column"] == table_relation.types["enum_column"]
 
     # These two relations should now be unionable
     union_relation = (null_relation + table_relation).order("other_column asc")
-    assert (
-        union_relation.sql_types["enum_column"]
-        == table_relation.sql_types["enum_column"]
-    )
+    assert union_relation.types["enum_column"] == table_relation.types["enum_column"]
 
     with pl.StringCache():
         correct_union_df = pl.DataFrame(
@@ -710,22 +697,19 @@ def test_with_missing_nullable_enum_columns_without_table():
         relation.with_missing_nullable_columns()
 
     model_relation = relation.set_model(EnumModel).with_missing_nullable_columns()
-    assert model_relation.sql_types["enum_column_1"].startswith("enum__")
+    assert model_relation.types["enum_column_1"].startswith("enum__")
     assert (
-        model_relation.sql_types["enum_column_2"]
-        == model_relation.sql_types["enum_column_1"]
+        model_relation.types["enum_column_2"] == model_relation.types["enum_column_1"]
     )
 
     # And now we should be able to insert it into a new table
     model_relation.create_table(name="enum_table")
     table_relation = db.table("enum_table")
     assert (
-        table_relation.sql_types["enum_column_1"]
-        == model_relation.sql_types["enum_column_1"]
+        table_relation.types["enum_column_1"] == model_relation.types["enum_column_1"]
     )
     assert (
-        table_relation.sql_types["enum_column_2"]
-        == model_relation.sql_types["enum_column_1"]
+        table_relation.types["enum_column_2"] == model_relation.types["enum_column_1"]
     )
 
 
@@ -745,7 +729,7 @@ def test_with_missing_defualtable_enum_columns():
         relation.with_missing_defaultable_columns()
 
     model_relation = relation.set_model(EnumModel).with_missing_defaultable_columns()
-    assert model_relation.sql_types["enum_column"].startswith("enum__")
+    assert model_relation.types["enum_column"].startswith("enum__")
 
 
 def test_relation_insert_into():
@@ -807,17 +791,17 @@ def test_polars_support():
     my_model_df = pl.DataFrame({"a": [1, 2], "b": ["x", "y"]})
     with pytest.raises(
         ValueError,
-        match=r"MyModel.from_polars\(\) can only be invoked with exactly 1 row.*",
+        match=r"MyModel._from_polars\(\) can only be invoked with exactly 1 row.*",
     ):
-        MyModel.from_polars(my_model_df)
+        MyModel.from_row(my_model_df)
 
-    my_model = MyModel.from_polars(my_model_df.head(1))
+    my_model = MyModel.from_row(my_model_df.head(1))
     assert my_model.a == 1
     assert my_model.b == "x"
 
     # Anything besides a polars dataframe should raise TypeError
     with pytest.raises(TypeError):
-        MyModel.from_polars(None)  # pyright: ignore
+        MyModel.from_row(None)  # pyright: ignore
 
     # But we can also skip validation if we want
     unvalidated_model = MyModel.from_row(
@@ -925,22 +909,6 @@ def test_no_filter():
     relation = db.to_relation("select 1 as a, 2 as b")
     # The logical or should not make the filter valid for our row
     assert relation.filter().count()
-
-
-def test_relation_should_raise_attribute_error_on_missing_attributes():
-    """It should behave as any other object when it comes to attributes."""
-    with pytest.raises(
-        AttributeError,
-        match="Relation has no attribute 'unknown'",
-    ):
-        pt.Relation("select 1 as a").unknown
-
-    # Certain specific methods are not forwarded to the underlying relation
-    with pytest.raises(
-        AttributeError,
-        match="Relation has no attribute 'df'",
-    ):
-        pt.Relation("select 1 as a").df
 
 
 def test_string_representation_of_relation():
