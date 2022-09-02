@@ -90,7 +90,7 @@ def test_database_create_table():
     dummy_relation.insert_into(table="test_table")
 
     # But we should not be able to insert null data in non-optional columns
-    null_relation = dummy_relation.drop("int_column").project("null as int_column, *")
+    null_relation = dummy_relation.drop("int_column").select("null as int_column, *")
     with pytest.raises(
         Exception,
         match=(

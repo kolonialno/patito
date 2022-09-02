@@ -28,18 +28,18 @@ def test_relation():
     table_relation = db.table("table_name")
 
     # A projection can be done in several different ways
-    assert table_relation.project("column_1", "column_2") == table_relation.project(
+    assert table_relation.select("column_1", "column_2") == table_relation.select(
         "column_1, column_2"
     )
     assert (
-        table_relation.project("column_1, column_2")
+        table_relation.select("column_1, column_2")
         == table_relation[["column_1, column_2"]]
     )
     assert table_relation[["column_1, column_2"]] == table_relation
-    assert table_relation.project("column_1") != table_relation.project("column_2")
+    assert table_relation.select("column_1") != table_relation.select("column_2")
 
     # We can also use kewyrod arguments to rename columns
-    assert tuple(table_relation.project(column_3="column_1::varchar || column_2")) == (
+    assert tuple(table_relation.select(column_3="column_1::varchar || column_2")) == (
         {"column_3": "1a"},
         {"column_3": "2b"},
         {"column_3": "3c"},
@@ -86,7 +86,7 @@ def test_relation():
     )
 
     # You should be able to subscript columns
-    assert table_relation["column_1"] == table_relation.project("column_1")
+    assert table_relation["column_1"] == table_relation.select("column_1")
     assert table_relation[["column_1", "column_2"]] == table_relation
 
     # The relation's columns can be retrieved
@@ -104,7 +104,7 @@ def test_relation():
 
     # You can drop one or more columns
     assert table_relation.drop("column_1").columns == ["column_2"]
-    assert table_relation.project("*, 1 as column_3").drop(
+    assert table_relation.select("*, 1 as column_3").drop(
         "column_1", "column_2"
     ).columns == ["column_3"]
 
@@ -183,7 +183,7 @@ def test_star_select():
     """It should select all columns with star."""
     df = pt.DataFrame({"a": [1, 2], "b": [3, 4]})
     relation = pt.Relation(df)
-    assert relation.project("*") == relation
+    assert relation.select("*") == relation
 
 
 def test_casting_relations_between_database_connections():
@@ -402,9 +402,7 @@ def test_relation_case_method():
         mapping={"A": 10, "B": 20, "D": None},
         default=0,
     )
-    alt_mapped_actions = db.to_relation(df).project(
-        f"*, {case_statement} as max_weight"
-    )
+    alt_mapped_actions = db.to_relation(df).select(f"*, {case_statement} as max_weight")
     assert alt_mapped_actions == correct_mapped_actions
 
 
@@ -513,7 +511,7 @@ def test_relation_model_functionality():
 
     # But the model is "lost" when we use schema-changing methods
     assert not isinstance(
-        dummy_relation.set_model(MyModel).limit(1).project("a").get(),
+        dummy_relation.set_model(MyModel).limit(1).select("a").get(),
         MyModel,
     )
 

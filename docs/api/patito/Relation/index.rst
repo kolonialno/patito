@@ -12,10 +12,10 @@ Properties
 
 .. toctree::
 
-   alias
-   columns
-   model
-   types
+   alias <alias>
+   columns <columns>
+   model <model>
+   types <types>
 
 Methods
 -------
@@ -44,7 +44,7 @@ Methods
    left_join <left_join>
    limit <limit>
    order <order>
-   project <project>
+   select <select>
    rename <rename>
    set_alias <set_alias>
    set_model <set_model>

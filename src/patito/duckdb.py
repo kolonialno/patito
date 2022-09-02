@@ -386,7 +386,7 @@ class Relation(Generic[ModelType]):
         else:
             included = lambda _: True  # noqa: E731
 
-        return self.project(
+        return self.select(
             ", ".join(
                 f"{column} as {column}{suffix}" if included(column) else column
                 for column in self.columns
@@ -452,7 +452,7 @@ class Relation(Generic[ModelType]):
         else:
             included = lambda _: True
 
-        return self.project(
+        return self.select(
             ", ".join(
                 f"{column} as {prefix}{column}" if included(column) else column
                 for column in self.columns
@@ -546,7 +546,7 @@ class Relation(Generic[ModelType]):
             ...     default="three",
             ...     as_column="b",
             ... )
-            >>> relation.project(f"*, {case_statement}").to_df()
+            >>> relation.select(f"*, {case_statement}").to_df()
             shape: (2, 2)
             ┌─────┬─────┐
             │ a   ┆ b   │
@@ -619,7 +619,7 @@ class Relation(Generic[ModelType]):
                 projections.append(f"coalesce({column}, {expression!r}) as {column}")
             else:
                 projections.append(column)
-        return cast(RelationType, self.project(*projections))
+        return cast(RelationType, self.select(*projections))
 
     @property
     def columns(self) -> List[str]:
@@ -1421,7 +1421,7 @@ class Relation(Generic[ModelType]):
             schema_change=False,
         )
 
-    def project(
+    def select(
         self,
         *projections: Union[str, int, float],
         **named_projections: Union[str, int, float],
@@ -1444,7 +1444,7 @@ class Relation(Generic[ModelType]):
             >>> import patito as pt
             >>> db = pt.Database()
             >>> relation = db.to_relation(pt.DataFrame({"original_column": [1, 2, 3]}))
-            >>> relation.project("*").to_df()
+            >>> relation.select("*").to_df()
             shape: (3, 1)
             ┌─────────────────┐
             │ original_column │
@@ -1457,7 +1457,7 @@ class Relation(Generic[ModelType]):
             ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
             │ 3               │
             └─────────────────┘
-            >>> relation.project("*", multiplied_column="2 * original_column").to_df()
+            >>> relation.select("*", multiplied_column="2 * original_column").to_df()
             shape: (3, 2)
             ┌─────────────────┬───────────────────┐
             │ original_column ┆ multiplied_column │
@@ -1567,7 +1567,7 @@ class Relation(Generic[ModelType]):
             >>> relation_1.set_alias("x").inner_join(
             ...     relation_2.set_alias("y"),
             ...     on="x.a = y.a",
-            ... ).project("x.a", "y.a", "b", "c").to_df()
+            ... ).select("x.a", "y.a", "b", "c").to_df()
             shape: (1, 4)
             ┌─────┬─────┬─────┬─────┐
             │ a   ┆ a:1 ┆ b   ┆ c   │
@@ -1824,7 +1824,7 @@ class Relation(Generic[ModelType]):
             │ 1   ┆ 2   ┆ 3   │
             └─────┴─────┴─────┘
         """
-        return self.project("*", **named_projections)
+        return self.select("*", **named_projections)
 
     def with_missing_defaultable_columns(
         self: RelationType,
@@ -2483,7 +2483,7 @@ class Database:
             └─────┴─────┴─────┘
 
             >>> relation = db.query("select 1 as a, 2 as b, 3 as c", alias="my_alias")
-            >>> relation.project("my_alias.a").to_df()
+            >>> relation.select("my_alias.a").to_df()
             shape: (1, 1)
             ┌─────┐
             │ a   │
