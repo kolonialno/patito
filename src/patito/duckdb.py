@@ -2127,9 +2127,9 @@ class Relation(Generic[ModelType]):
         """
         Return Relation with selected columns.
 
-        Uses :ref:`Relation.project()<Relation.project>` under-the-hood in order to
+        Uses :ref:`Relation.select()<Relation.select>` under-the-hood in order to
         perform the selection. Can technically be used to rename columns,
-        define derived columns, and so on, but prefer the use of Relation.project() for
+        define derived columns, and so on, but prefer the use of Relation.select() for
         such use cases.
 
         Args:
