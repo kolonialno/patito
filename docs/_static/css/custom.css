@@ -6,6 +6,23 @@
   --lavender: #A573D2;
 }
 
+/* Unvisited links are Grapefruit colored */
+a {
+  color: var(--grapefruit);
+}
+
+/* Visited links are Grapefruit colored */
+a:visited {
+  color: var(--grapefruit);
+}
+
+/* Links become Aubergine colored on hover */
+a:hover {
+  color: var(--aubergine);
+  text-decoration: underline;
+}
+
+
 /* Left sidebar in Cream color */
 .wy-nav-side {
   background-color: var(--cream);
@@ -29,20 +46,18 @@
   background-color: var(--egg-yolk);
 }
 
-/* Unvisited links are Grapefruit colored */
-a {
-  color: var(--grapefruit);
+/* Also on mobile */
+.wy-nav-top {
+  background: var(--egg-yolk);
 }
-
-/* Visited links are Grapefruit colored */
-a:visited {
-  color: var(--grapefruit);
+.wy-nav-top a {
+  color: white;
 }
-
-/* Links become Aubergine colored on hover */
-a:hover {
-  color: var(--aubergine);
-  text-decoration: underline;
+.wy-nav-top a:visited {
+  color: white;
+}
+.wy-nav-top a:before {
+  content: "🦆";
 }
 
 /* Make link colors on top and bottom Egg Yolk to blend better in. */
