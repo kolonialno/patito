@@ -26,6 +26,7 @@ In tabular form the data might look something like this.
 .. list-table:: Table 1: Products
     :widths: 33 33 33
     :header-rows: 1
+    :align: center
 
     * - ``product_id``
       - ``name``
@@ -103,6 +104,7 @@ We can now use :ref:`Model.validate() <Model.validate>` in order to validate the
 
     >>> from project.models import Product
     >>> Product.validate(product_df)
+    None
 
 Well, that wasn't really interesting...
 The validate method simply returns ``None`` if no errors are found.
@@ -159,5 +161,8 @@ If we now use this improved class to validate ``invalid_product_df``, we should 
     ValidationError: 2 validation errors for Product
     product_id
       2 rows with duplicated values. (type=value_error.rowvalue)
-      temperature_zone
-        Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
+    temperature_zone
+      Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
+
+Patito has now detected that the given column contains duplicates.
+You can read more about the dataframe-specific constraints in the documentation for ``patito.Field`` :ref:`here <Field>`.
