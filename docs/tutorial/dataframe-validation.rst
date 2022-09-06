@@ -98,7 +98,7 @@ Let's take the data presented in `Table 1 <product_table>`_ and represent it as 
     ...     }
     ... )
 
-We can now use :ref:`Model.validate() <Model.validate>` in order to validate the content of our dataframe.
+We can now use :ref:`Product.validate() <Model.validate>` in order to validate the content of our dataframe.
 
 .. code-block:: python
 
@@ -137,12 +137,13 @@ Patito allows you to define a single class which validates both singular object 
         patito[<code class='literal'>patito.Model</code><br /><br />Singular Instance Validation<br />+<br />DataFrame Validation]
         pydantic-->|Same class<br />definition|patito
 
-Patito tries to rely as much as possible on pydantic's existing modelling concepts, naturally extending them to the dataframe domain where possible.
+Patito tries to rely as much as possible on pydantic's existing modelling concepts, naturally extending them to the dataframe domain where suitable.
 Model fields annotated with ``str`` will map to dataframe columns stored as ``pl.Utf8``, ``int`` as ``pl.Int8``/``pl.Int16``/.../``pl.Int64``, and so on.
-But certain modelling concepts are not applicable in the context of singular object instances, and are therefore necessarily not part of pydantic's API.
+Field types wrapped in ``Optional`` allow null values, while bare types do not.
 
+But certain modelling concepts are not applicable in the context of singular object instances, and are therefore necessarily not part of pydantic's API.
 Take ``product_id`` as an example, you would expect this column to be unique across all products and duplicates should therefore be considered invalid.
-In pydantic you have no way to express this, but patito expands upon pydantic in various ways in order to represent dataframe-related constraints.
+In pydantic you have no way to express this, but Patito expands upon pydantic in various ways in order to represent dataframe-related constraints.
 One of these extensions is the ``unique`` parameter accepted by ``patito.Field``, which allows you to specify that all the values of a given column should be unique.
 
 .. code-block:: python
@@ -154,7 +155,7 @@ One of these extensions is the ``unique`` parameter accepted by ``patito.Field``
         temperature_zone: Literal["dry", "cold", "frozen"]
 
 
-The ``patito.Field`` class accepts `the same parameters <https://pydantic-docs.helpmanual.io/usage/schema/#field-customization>`_ as ``pydantic.Field``, but you can read more about the additional dataframe-specific constraints in the documentation :ref:`here <Field>`.
+The ``patito.Field`` class accepts `the same parameters <https://pydantic-docs.helpmanual.io/usage/schema/#field-customization>`_ as ``pydantic.Field``, but adds additional dataframe-specific constraints documented :ref:`here <Field>`.
 If we now use this improved class to validate ``invalid_product_df``, we should receive a new error.
 
 .. code-block:: python
@@ -167,3 +168,5 @@ If we now use this improved class to validate ``invalid_product_df``, we should 
       Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
 
 Patito has now detected that the given column contains duplicates!
+Several more properties and methods are available on ``patito.Model`` as outlined :ref:`here <Model>`; you can for instance generate valid mock dataframes for testing purposes with :ref:`Model.examples() <Model.examples>`.
+You can also dynamically construct models with methods such as :ref:`Model.select() <Model.select>`, :ref:`Model.prefix() <Model.prefix>`, and :ref:`Model.join() <Model.join>`.
