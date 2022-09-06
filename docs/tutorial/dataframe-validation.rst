@@ -8,9 +8,9 @@ If any one of these assumptions for some reason should become invalidated at a l
 Most data science projects are riddled with such assumptions; they are usually spread all over the code and in the developers' minds.
 These implicit assumptions will not only make it difficult to onboard new developers, but it will also cause some serious head scratches when you yourself return to a long forgotten project you once authored.
 
-At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify all the assumptions in the form of :ref:`models <Model>`.
+At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify all such assumptions in the form of :ref:`models <Model>`.
 If you persistently use these models to validate the data sources wherever they enter the data pipeline, you will turn your `data assumptions` into `data assertions`.
-As a result your models become a trustworthy centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
+In turn, your models become a trustworthy centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
 
 Enough chit chat, let's get into some technical details!
 Let's say that your project keeps track of products, and that these products have three core properties:
@@ -45,7 +45,7 @@ In tabular form the data might look something like this.
       - ...
 
 We now start to model the restrictions we want to put upon our data.
-In Patito this is done by defining a class which inherits from ``patito.Model``, a class which has one `field annotation` for each column in the dataframe.
+In Patito this is done by defining a class which inherits from ``patito.Model``, a class which has one `field annotation` for each column in the data.
 These models should preferably be defined in a centralized place, conventionally ``<YOUR_PROJECT_NAME>/models.py``, where you can easily find and refer to them.
 
 .. code-block:: python
@@ -63,7 +63,7 @@ These models should preferably be defined in a centralized place, conventionally
 
 
 Here we have used ``typing.Literal`` from `the standard library <https://docs.python.org/3/library/typing.html#typing.Literal>`_ in order to specify that ``temperature_zone`` is not only a ``str``, but `specifically` one of the literal values ``"dry"``, ``"cold"``, or ``"frozen"``.
-You can now use this class to represent a `single specific instance` of a product as an object.
+You can now use this class to represent a `single specific instance` of a product:
 
 .. code-block:: python
 
@@ -71,7 +71,7 @@ You can now use this class to represent a `single specific instance` of a produc
     Product(product_id=1, name='Apple', temperature_zone='dry')
 
 
-The class also automatically offers input data validation at instantiation, for instance if you provide an invalid value for ``temperature_zone``.
+The class also automatically offers input data validation, for instance if you provide an invalid value for ``temperature_zone``.
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ The class also automatically offers input data validation at instantiation, for 
 
 A discerning reader might notice that this looks suspiciously like `pydantic's <https://github.com/pydantic/pydantic>`_ data models, and that is in fact because it is!
 Patito's model class is built upon pydantic's ``pydantic.BaseClass`` and therefore offers `all of pydantic's functionality <https://pydantic-docs.helpmanual.io/usage/models/>`_.
-But the difference is that Patito extends pydantic's validation of `single object instances` to `collections` of the same objects represented as `dataframes`.
+But the difference is that Patito extends pydantic's validation of `singular object instances` to `collections` of the same objects represented as `dataframes`.
 
 Let's take the data presented in `Table 1 <product_table>`_ and represent it as a polars dataframe.
 
@@ -108,7 +108,7 @@ We can now use :ref:`Model.validate() <Model.validate>` in order to validate the
 
 Well, that wasn't really interesting...
 The validate method simply returns ``None`` if no errors are found.
-Let's rather try with intentionally invalid data.
+Let's rather try with invalid data, setting the temperature zone of one of the products to ``"oven"``.
 
 
 .. code-block:: python
@@ -138,10 +138,11 @@ Patito allows you to define a single class which validates both singular object 
         pydantic-->|Same class<br />definition|patito
 
 Patito tries to rely as much as possible on pydantic's existing modelling concepts, naturally extending them to the dataframe domain where possible.
-But certain modelling concepts are not applicable in the context of singular instances, and are therefore necessarily not part of pydantic's API.
+Model fields annotated with ``str`` will map to dataframe columns stored as ``pl.Utf8``, ``int`` as ``pl.Int8``/``pl.Int16``/.../``pl.Int64``, and so on.
+But certain modelling concepts are not applicable in the context of singular object instances, and are therefore necessarily not part of pydantic's API.
 
 Take ``product_id`` as an example, you would expect this column to be unique across all products and duplicates should therefore be considered invalid.
-In pydantic you have no way to express this, but patito expands upon ``pydantic.Field`` in various ways in order to represent dataframe-related constraints.
+In pydantic you have no way to express this, but patito expands upon pydantic in various ways in order to represent dataframe-related constraints.
 One of these extensions is the ``unique`` parameter accepted by ``patito.Field``, which allows you to specify that all the values of a given column should be unique.
 
 .. code-block:: python
@@ -153,6 +154,7 @@ One of these extensions is the ``unique`` parameter accepted by ``patito.Field``
         temperature_zone: Literal["dry", "cold", "frozen"]
 
 
+The ``patito.Field`` class accepts `the same parameters <https://pydantic-docs.helpmanual.io/usage/schema/#field-customization>`_ as ``pydantic.Field``, but you can read more about the additional dataframe-specific constraints in the documentation :ref:`here <Field>`.
 If we now use this improved class to validate ``invalid_product_df``, we should receive a new error.
 
 .. code-block:: python
@@ -164,5 +166,4 @@ If we now use this improved class to validate ``invalid_product_df``, we should 
     temperature_zone
       Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
 
-Patito has now detected that the given column contains duplicates.
-You can read more about the dataframe-specific constraints in the documentation for ``patito.Field`` :ref:`here <Field>`.
+Patito has now detected that the given column contains duplicates!
