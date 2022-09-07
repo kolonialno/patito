@@ -108,7 +108,9 @@ We can now use :ref:`Product.validate() <Model.validate>` in order to validate t
 
 Well, that wasn't really interesting...
 The validate method simply returns ``None`` if no errors are found.
-Let's rather try with invalid data, setting the temperature zone of one of the products to ``"oven"``.
+It is intended as a guard statement to be put before any logic that requires the data to be valid.
+That way you can rely on the data being compatible with the given model schema, otherwise the ``.validate()`` method would have raised an exception.
+Let's try this with invalid data, setting the temperature zone of one of the products to ``"oven"``.
 
 
 .. code-block:: python
