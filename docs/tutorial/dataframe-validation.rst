@@ -1,14 +1,14 @@
 Using Patito for DataFrame Validation
 =====================================
 
-Whenever you find yourself developing something that will rely on some external data source, you will likely start by making yourself familiar with the data and its properties.
-During this initial `exploratory data analysis` you will quickly establish a set of facts about the data, facts which you will rely upon when building your data product.
-If any one of these assumptions for some reason should become invalidated at a later point in time, the data product itself will often break, and not necessarily in an obvious way.
+Have you ever found yourself relying on some column of an external data source being non-nullable only to find out `much` later that the assumption proved to be false?
+What about discovering that a production model has had a huge performance regression because a new category was introduced to a categorical column, and that the training pipeline neglected to account for this new reality?
 
-Most data science projects are riddled with such assumptions; they are usually spread all over the code and in the developers' minds.
-These implicit assumptions will not only make it difficult to onboard new developers, but it will also cause some serious head scratches when you yourself return to a long forgotten project you once authored.
+You might not have encountered any of these `exact` scenarios, but perhaps similar ones.
+They illustrate the necessity of validating your assumptions.
+It is much better to explicitly specify all the constraints of your data and let your program fail loud and clear when they do `not` hold, compared to letting errors go undetected and wreak havoc.
 
-At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify all such assumptions in the form of :ref:`models <Model>`.
+At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify the constraints of your data in the form of :ref:`models <Model>`.
 If you persistently use these models to validate the data sources wherever they enter the data pipeline, you will turn your `data assumptions` into `data assertions`.
 In turn, your models become a trustworthy centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
 
