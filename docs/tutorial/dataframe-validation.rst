@@ -8,6 +8,10 @@ You might not have encountered any of these `exact` scenarios, but perhaps simil
 They illustrate the necessity of validating your assumptions.
 It is much better to explicitly specify all the constraints of your data and let your program fail loud and clear when they do `not` hold, compared to letting errors go undetected and wreak havoc.
 
+The `polars <https://github.com/pola-rs/polars>`_ dataframe library has been making the rounds lately among data scientists at Oda.
+It can be considered as a total replacement of pandas, initially tempting you with its advertised `top-notch performance <https://www.pola.rs/benchmarks.html>`_, but then sealing the deal with its intuitive and expressive API.
+The exact virtues of polars is a topic for another article, but suffice it to say that it is highly recommended to try it out, it has some great `introductory documentation <https://pola-rs.github.io/polars-book/user-guide/>`_.
+
 At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify the constraints of your data in the form of :ref:`models <Model>`.
 If you persistently use these models to validate the data sources wherever they enter the data pipeline, you will turn your `data assumptions` into `data assertions`.
 In turn, your models become a trustworthy centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
