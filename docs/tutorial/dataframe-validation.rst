@@ -2,24 +2,27 @@ Using Patito for DataFrame Validation
 =====================================
 
 Have you ever found yourself relying on some column of an external data source being non-nullable only to find out `much` later that the assumption proved to be false?
-What about discovering that a production model has had a huge performance regression because a new category was introduced to a categorical column, and that the training pipeline neglected to account for this new reality?
+What about discovering that a production model has had a huge performance regression because a new category was introduced to a categorical column?
+You might not have encountered any of these `exact` scenarios, but perhaps similar ones; they illustrate the necessity of validating your data.
 
-You might not have encountered any of these `exact` scenarios, but perhaps similar ones.
-They illustrate the necessity of validating your assumptions.
-It is much better to explicitly specify all the constraints of your data and let your program fail loud and clear when they do `not` hold, compared to letting errors go undetected and wreak havoc.
+This is a problem encountered in Data & Insight at Oda all the time.
+A machine learning model might ingest data from a production system that changes frequently, and the model's author wants to be notified if certain assumptions no longer hold.
+Or perhaps a data analyst might rely on a pre-processing step that removes all discontinued products from a data set, and this should be validated and communicated clearly in their Jupyter notebook.
 
-The `polars <https://github.com/pola-rs/polars>`_ dataframe library has been making the rounds lately among data scientists at Oda.
-It can be considered as a total replacement of pandas, initially tempting you with its advertised `top-notch performance <https://www.pola.rs/benchmarks.html>`_, but then sealing the deal with its intuitive and expressive API.
-The exact virtues of polars is a topic for another article, but suffice it to say that it is highly recommended to try it out, it has some great `introductory documentation <https://pola-rs.github.io/polars-book/user-guide/>`_.
+At Oda we recently open-sourced `patito <https://github.com/kolonialno/patito>`_, a dataframe validation library built on top of `polars <https://github.com/pola-rs/polars>`_, which tries to solve this problem.
+The polars dataframe library has lately been making the rounds among data scientists at Oda, and for good reasons.
+It can be considered as a total replacement of the well-known `pandas <https://github.com/pandas-dev/pandas>`_ library, initially tempting you with its advertised `top-notch performance <https://www.pola.rs/benchmarks.html>`_, but then sealing the deal with its intuitive and expressive API.
+The exact virtues of polars is a topic for another article, but suffice it to say that it is `highly` recommended and it has some great `introductory documentation <https://pola-rs.github.io/polars-book/user-guide/>`_.
 
-At its core, this is the problem Patito tries to solve, it offers a `declarative` way to specify the constraints of your data in the form of :ref:`models <Model>`.
-If you persistently use these models to validate the data sources wherever they enter the data pipeline, you will turn your `data assumptions` into `data assertions`.
-In turn, your models become a trustworthy centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
+With Patito the idea is that you should define a so-called :ref:`"model" <Model>` for each of your data sources.
+A `model` is a declarative python class which describes the general properties of a tabular data set: the names of all the columns, their types, and so on...
+These models can then be used to validate the data sources when they are ingested into the data pipeline.
+In turn, your models become a trustworthy, centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
 
 Enough chit chat, let's get into some technical details!
 Let's say that your project keeps track of products, and that these products have three core properties:
 
-1. A unique numeric identifier...
+1. A unique, numeric identifier...
 2. a name...
 3. and an ideal temperature zone, one of either ``"dry"``, ``"cold"``, or ``"frozen"``.
 
