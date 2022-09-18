@@ -2,7 +2,7 @@ Using Patito for DataFrame Validation
 =====================================
 
 Have you ever found yourself relying on some column of an external data source being non-nullable only to find out `much` later that the assumption proved to be false?
-What about discovering that a production model has had a huge performance regression because a new category was introduced to a categorical column?
+What about discovering that a production machine learning model has had a huge performance regression because a new category was introduced to a categorical column?
 You might not have encountered any of these `exact` scenarios, but perhaps similar ones; they illustrate the necessity of validating your data.
 
 This is a problem encountered in Data & Insight at Oda all the time.
