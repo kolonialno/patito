@@ -6,7 +6,7 @@ What about discovering that a production model has had a huge performance regres
 You might not have encountered any of these `exact` scenarios, but perhaps similar ones; they illustrate the necessity of validating your data.
 
 This is a problem encountered in Data & Insight at Oda all the time.
-A machine learning model might ingest data from a production system that changes frequently, and the model's author wants to be notified if certain assumptions no longer hold.
+A machine learning model might ingest data from a production system that changes frequently, and the author of the model wants to be notified if certain assumptions no longer hold.
 Or perhaps a data analyst might rely on a pre-processing step that removes all discontinued products from a data set, and this should be validated and communicated clearly in their Jupyter notebook.
 
 At Oda we recently open-sourced `patito <https://github.com/kolonialno/patito>`_, a dataframe validation library built on top of `polars <https://github.com/pola-rs/polars>`_, which tries to solve this problem.
@@ -14,40 +14,46 @@ The polars dataframe library has lately been making the rounds among data scient
 It can be considered as a total replacement of the well-known `pandas <https://github.com/pandas-dev/pandas>`_ library, initially tempting you with its advertised `top-notch performance <https://www.pola.rs/benchmarks.html>`_, but then sealing the deal with its intuitive and expressive API.
 The exact virtues of polars is a topic for another article, but suffice it to say that it is `highly` recommended and it has some great `introductory documentation <https://pola-rs.github.io/polars-book/user-guide/>`_.
 
-With Patito the idea is that you should define a so-called :ref:`"model" <Model>` for each of your data sources.
-A `model` is a declarative python class which describes the general properties of a tabular data set: the names of all the columns, their types, and so on...
-These models can then be used to validate the data sources when they are ingested into the data pipeline.
+The core idea of Patito is that you should define a so-called :ref:`"model" <Model>` for each of your data sources.
+A `model` is a declarative python class which describes the general properties of a tabular data set: the names of all the columns, their types, value bounds, and so on...
+These models can then be used to validate the data sources when they are ingested into your project's data pipeline.
 In turn, your models become a trustworthy, centralized catalog of all the core facts about your data, facts you can safely rely upon during development.
 
 Enough chit chat, let's get into some technical details!
-Let's say that your project keeps track of products, and that these products have three core properties:
+Let's say that your project keeps track of products, and that these products have four core properties:
 
-1. A unique, numeric identifier...
-2. a name...
-3. and an ideal temperature zone, one of either ``"dry"``, ``"cold"``, or ``"frozen"``.
+1. A unique, numeric identifier
+2. A name
+3. An ideal temperature zone of either ``"dry"``, ``"cold"``, or ``"frozen"``
+4. A product demand given as a percentage of the total sales forecast for the next week
 
 In tabular form the data might look something like this.
 
 .. _product_table:
 
 .. list-table:: Table 1: Products
-    :widths: 33 33 33
+    :widths: 25 25 25 25
     :header-rows: 1
     :align: center
 
     * - ``product_id``
       - ``name``
       - ``temperature_zone``
+      - ``demand_percentage``
     * - 1
       - Apple
       - dry
+      - 0.23%
     * - 2
       - Milk
       - cold
+      - 0.61%
     * - 3
       - Ice cubes
       - frozen
+      - 0.01%
     * - ...
+      - ...
       - ...
       - ...
 
@@ -67,6 +73,7 @@ These models should preferably be defined in a centralized place, conventionally
         product_id: int
         name: str
         temperature_zone: Literal["dry", "cold", "frozen"]
+        demand_percentage: float
 
 
 Here we have used ``typing.Literal`` from `the standard library <https://docs.python.org/3/library/typing.html#typing.Literal>`_ in order to specify that ``temperature_zone`` is not only a ``str``, but `specifically` one of the literal values ``"dry"``, ``"cold"``, or ``"frozen"``.
@@ -74,15 +81,15 @@ You can now use this class to represent a `single specific instance` of a produc
 
 .. code-block:: python
 
-    >>> Product(product_id=1, name="Apple", temperature_zone="dry")
-    Product(product_id=1, name='Apple', temperature_zone='dry')
+    >>> Product(product_id=1, name="Apple", temperature_zone="dry", demand_percentage=0.23)
+    Product(product_id=1, name='Apple', temperature_zone='dry', demand_percentage=0.23)
 
 
 The class also automatically offers input data validation, for instance if you provide an invalid value for ``temperature_zone``.
 
 .. code-block:: python
 
-    >>> Product(product_id=64, name="Pizza", temperature_zone="oven")
+    >>> Product(product_id=64, name="Pizza", temperature_zone="oven", demand_percentage=0.12)
     ValidationError: 1 validation error for Product
     temperature_zone
       unexpected value; permitted: 'dry', 'cold', 'frozen' (type=value_error.const; given=oven; permitted=('dry', 'cold', 'frozen'))
@@ -102,6 +109,7 @@ Let's take the data presented in `Table 1 <product_table>`_ and represent it as 
     ...         "product_id": [1, 2, 3],
     ...         "name": ["Apple", "Milk", "Ice cubes"],
     ...         "temperature_zone": ["dry", "cold", "frozen"],
+    ...         "demand_percentage": [0.23, 0.61, 0.01],
     ...     }
     ... )
 
@@ -127,6 +135,7 @@ Let's try this with invalid data, setting the temperature zone of one of the pro
     ...         "product_id": [64, 64],
     ...         "name": ["Pizza", "Cereal"],
     ...         "temperature_zone": ["oven", "dry"],
+    ...         "demand_percentage": [0.07, 0.16],
     ...     }
     ... )
     >>> Product.validate(invalid_product_df)
@@ -162,20 +171,37 @@ One of these extensions is the ``unique`` parameter accepted by ``patito.Field``
         product_id: int = pt.Field(unique=True)
         name: str
         temperature_zone: Literal["dry", "cold", "frozen"]
+        demand_percentage: float
 
 
 The ``patito.Field`` class accepts `the same parameters <https://pydantic-docs.helpmanual.io/usage/schema/#field-customization>`_ as ``pydantic.Field``, but adds additional dataframe-specific constraints documented :ref:`here <Field>`.
-If we now use this improved class to validate ``invalid_product_df``, we should receive a new error.
+In those cases where Patito's built-in constraints do not suffice, you can specify arbitrary constraints in the form of polars `expressions <https://pola-rs.github.io/polars-book/user-guide/dsl/expressions.html>`_ which must evaluate to ``True`` for each row in order for the dataframe to be considered valid.
+Let's say we want to make sure that ``demand_percentage`` sums up to 100% for the entire dataframe, otherwise we might be missing one or more products.
+We can do this by passing the ``constraints`` parameter to ``patito.Field``.
+
+.. code-block:: python
+   :caption: project/models.py::Product
+
+    class Product(pt.Model):
+        product_id: int = pt.Field(unique=True)
+        name: str
+        temperature_zone: Literal["dry", "cold", "frozen"]
+        demand_percentage: float = pt.Field(constraints=pt.field.sum() == 100.0)
+
+Here ``patito.field`` is an alias for the field column and is automatically replaced with ``polars.col("demand_percentage")`` before validation.
+If we now use this improved class to validate ``invalid_product_df``, we should detect new errors.
 
 .. code-block:: python
 
     >>> Product.validate(invalid_product_df)
-    ValidationError: 2 validation errors for Product
+    ValidationError: 3 validation errors for Product
     product_id
       2 rows with duplicated values. (type=value_error.rowvalue)
     temperature_zone
       Rows with invalid values: {'oven'}. (type=value_error.rowvalue)
+    demand_percentage
+      2 rows does not match custom constraints. (type=value_error.rowvalue)
 
-Patito has now detected that the given column contains duplicates!
+Patito has now detected that ``product_id`` contains duplicates and that ``demand_percentage`` does not sum up to 100%!
 Several more properties and methods are available on ``patito.Model`` as outlined :ref:`here <Model>`; you can for instance generate valid mock dataframes for testing purposes with :ref:`Model.examples() <Model.examples>`.
 You can also dynamically construct models with methods such as :ref:`Model.select() <Model.select>`, :ref:`Model.prefix() <Model.prefix>`, and :ref:`Model.join() <Model.join>`.

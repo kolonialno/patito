@@ -1409,7 +1409,9 @@ class FieldDoc:
     Args:
         constraints (Union[polars.Expression, List[polars.Expression]): A single
             constraint or list of constraints, expressed as a polars expression objects.
-            All rows must satisfy the given constraint.
+            All rows must satisfy the given constraint. You can refer to the given column
+            with ``pt.field``, which will automatically be replaced with
+            ``polars.col(<field_name>)`` before evaluation.
         unique (bool): All row values must be unique.
         dtype (polars.datatype.DataType): The given dataframe column must have the given
             polars dtype, for instance ``polars.UInt64`` or ``pl.Float32``.
