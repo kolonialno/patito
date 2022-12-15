@@ -26,7 +26,7 @@ def test_is_optional():
 )
 def test_is_optional_with_pipe_operator():
     """It should return True for optional types."""
-    assert _is_optional(int | None)  # typing: ignore  # pragma: noqa
+    assert _is_optional(int | None)  # typing: ignore  # pragma: noqa  # pyright: ignore
 
 
 def test_dewrap_optional():
@@ -42,7 +42,9 @@ def test_dewrap_optional():
 )
 def test_dewrap_optional_with_pipe_operator():
     """It should return the inner type of Optional types."""
-    assert _dewrap_optional(int | None) is int  # typing: ignore  # pragma: noqa
+    assert (  # typing: ignore  # pragma: noqa  # pyright: ignore
+        _dewrap_optional(int | None) is int
+    )
 
 
 def test_missing_column_validation():
