@@ -23,6 +23,8 @@ from typing import (
 
 import numpy as np
 import polars as pl
+# ArrowErrorException is not currently exported into the polars.exceptions type stub
+from polars.polars import ArrowErrorException
 import pyarrow as pa  # type: ignore[import]
 from pydantic import create_model
 from typing_extensions import Literal
@@ -1798,7 +1800,7 @@ class Relation(Generic[ModelType]):
             return DataFrame._from_arrow(arrow_table).with_columns(
                 pl.col(pl.Int32).cast(pl.Int64)
             )
-        except pa.ArrowInvalid:  # pragma: no cover
+        except (pa.ArrowInvalid, ArrowErrorException):  # pragma: no cover
             # Empty relations with enum columns can sometimes produce errors.
             # As a last-ditch effort, we convert such columns to VARCHAR.
             casted_columns = [
