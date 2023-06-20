@@ -382,7 +382,7 @@ def test_validation_of_bounds_checks():
     )
 
     valid = [42.5, 42.4, 42.5, 42.6, 42.6, 19.5, 3.1415, "value X", "ab", "ab"]
-    valid_df = pl.DataFrame(data=[valid], columns=BoundModel.columns)
+    valid_df = pl.DataFrame(data=[valid], schema=BoundModel.columns)
     BoundModel.validate(valid_df)
 
     invalid = [42.6, 42.5, 42.4, 42.5, 43.1, 19.75, 3.2, "value x", "a", "abc"]
@@ -392,7 +392,7 @@ def test_validation_of_bounds_checks():
             + invalid[column_index : column_index + 1]
             + valid[column_index + 1 :]
         )
-        invalid_df = pl.DataFrame(data=[data], columns=BoundModel.columns)
+        invalid_df = pl.DataFrame(data=[data], schema=BoundModel.columns)
         with pytest.raises(ValidationError) as e_info:
             BoundModel.validate(invalid_df)
         errors = e_info.value.errors()
@@ -432,7 +432,7 @@ def test_validation_of_dtype_specifiers():
         pl.Series([2]).cast(pl.UInt64),
         pl.Series([2]).cast(pl.UInt8),
     ]
-    valid_df = pl.DataFrame(data=valid, columns=DTypeModel.columns)
+    valid_df = pl.DataFrame(data=valid, schema=DTypeModel.columns)
     DTypeModel.validate(valid_df)
 
     invalid = [
@@ -453,7 +453,7 @@ def test_validation_of_dtype_specifiers():
             + invalid[column_index : column_index + 1]
             + valid[column_index + 1 :]
         )
-        invalid_df = pl.DataFrame(data=data, columns=DTypeModel.columns)
+        invalid_df = pl.DataFrame(data=data, schema=DTypeModel.columns)
         with pytest.raises(ValidationError) as e_info:
             DTypeModel.validate(invalid_df)
         errors = e_info.value.errors()
