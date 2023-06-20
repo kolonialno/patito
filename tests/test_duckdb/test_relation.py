@@ -384,7 +384,7 @@ def test_relation_case_method():
         }
     )
 
-    correct_df = df.with_column(
+    correct_df = df.with_columns(
         pl.Series([10, 20, 10, 0, None], dtype=pl.Int32).alias("max_weight")
     )
     correct_mapped_actions = db.to_relation(correct_df)

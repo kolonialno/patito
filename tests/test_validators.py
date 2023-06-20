@@ -187,7 +187,7 @@ def test_validate_dtype_checks():
 
         with pytest.raises(ValidationError) as e_info:
             validate(
-                dataframe=valid_df.with_column(pl.lit(1, dtype=dtype).alias(column)),
+                dataframe=valid_df.with_columns(pl.lit(1, dtype=dtype).alias(column)),
                 schema=CompleteModel,
             )
 
@@ -226,7 +226,7 @@ def test_validate_dtype_checks():
 
     pytest.importorskip("pandas")
     validate(
-        dataframe=valid_df.with_column(pl.col("date_column").cast(str)).to_pandas(),
+        dataframe=valid_df.with_columns(pl.col("date_column").cast(str)).to_pandas(),
         schema=PandasCompatibleModel,
     )
 
@@ -257,9 +257,9 @@ def test_datetime_validation():
     needs to check the "format" property on the field schema.
     """
 
-    string_df = pl.DataFrame().with_column(pl.lit("string", dtype=pl.Utf8).alias("c"))
-    date_df = pl.DataFrame().with_column(pl.lit(date.today(), dtype=pl.Date).alias("c"))
-    datetime_df = pl.DataFrame().with_column(
+    string_df = pl.DataFrame().with_columns(pl.lit("string", dtype=pl.Utf8).alias("c"))
+    date_df = pl.DataFrame().with_columns(pl.lit(date.today(), dtype=pl.Date).alias("c"))
+    datetime_df = pl.DataFrame().with_columns(
         pl.lit(datetime.now(), dtype=pl.Datetime).alias("c")
     )
 
@@ -595,4 +595,4 @@ def test_validation_of_list_dtypes():
     ]:
         # print(old, new)
         with pytest.raises(ValidationError):
-            ListModel.validate(valid_df.with_column(pl.col(old).alias(new)))
+            ListModel.validate(valid_df.with_columns(pl.col(old).alias(new)))

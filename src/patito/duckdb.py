@@ -1795,7 +1795,7 @@ class Relation(Generic[ModelType]):
             # because polars is much more eager to store integer Series as 64-bit
             # integers. Otherwise there must be done a lot of manual casting whenever
             # you cross the boundary between DuckDB and polars.
-            return DataFrame._from_arrow(arrow_table).with_column(
+            return DataFrame._from_arrow(arrow_table).with_columns(
                 pl.col(pl.Int32).cast(pl.Int64)
             )
         except pa.ArrowInvalid:  # pragma: no cover
@@ -1809,7 +1809,7 @@ class Relation(Generic[ModelType]):
             ]
             non_enum_relation = self._relation.project(", ".join(casted_columns))
             arrow_table = non_enum_relation.to_arrow_table()
-            return DataFrame._from_arrow(arrow_table).with_column(
+            return DataFrame._from_arrow(arrow_table).with_columns(
                 pl.col(pl.Int32).cast(pl.Int64)
             )
 

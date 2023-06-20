@@ -428,11 +428,11 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
                 derived_from = props["derived_from"]
                 dtype = self.model.dtypes[column_name]
                 if isinstance(derived_from, str):
-                    df = df.with_column(
+                    df = df.with_columns(
                         pl.col(derived_from).cast(dtype).alias(column_name)
                     )
                 elif isinstance(derived_from, pl.Expr):
-                    df = df.with_column(derived_from.cast(dtype).alias(column_name))
+                    df = df.with_columns(derived_from.cast(dtype).alias(column_name))
                 else:
                     raise TypeError(
                         "Can not derive dataframe column from type "
@@ -695,8 +695,8 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
     ) -> DF:
         return cast(DF, super().select(exprs=exprs))  # type: ignore[redundant-cast]
 
-    def with_column(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
-        return cast(DF, super().with_column(column=column))
+    def with_columns(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
+        return cast(DF, super().with_columns(column=column))
 
     def with_columns(  # noqa: D102
         self: DF,

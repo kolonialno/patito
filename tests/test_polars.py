@@ -82,7 +82,7 @@ def test_preservation_of_model():
 
     # First many eagerly executed method calls
     assert (
-        df_with_model.with_column(pl.lit(1).alias("a"))
+        df_with_model.with_columns(pl.lit(1).alias("a"))
         .filter(pl.lit(1) == 1)
         .select(pl.col("a"))
         .model
