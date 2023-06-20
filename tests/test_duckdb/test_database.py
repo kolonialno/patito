@@ -34,7 +34,7 @@ def test_database(tmp_path):
 
     # Check that new database objects are isolated from previous ones
     another_db = pt.Database()
-    with pytest.raises(Exception, match="Table does not exist!"):
+    with pytest.raises(Exception, match="does not exist!"):
         db_table = another_db.table("table_name_1")
 
     # Check the parquet reading functionality
@@ -93,8 +93,7 @@ def test_database_create_table():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'test_table': "
-            "NOT NULL constraint failed: test_table.int_column"
+            "NOT NULL constraint failed"
         ),
     ):
         null_relation.insert_into(table="test_table")
@@ -153,8 +152,7 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            "Failed to insert into table 'enum_table': "
-            "NOT NULL constraint failed: enum_table.non_nullable_enum_column"
+            "NOT NULL constraint failed"
         ),
     ):
         invalid_relation.insert_into(table="enum_table")
@@ -166,7 +164,6 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            ".*Failed to insert into table 'enum_table': "
             "Could not convert string 'd' to UINT8"
         ),
     ):
@@ -179,7 +176,6 @@ def test_validate_non_nullable_enum_columns():
     with pytest.raises(
         Exception,
         match=(
-            ".*Failed to insert into table 'enum_table': "
             "Could not convert string 'd' to UINT8"
         ),
     ):

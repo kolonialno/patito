@@ -655,7 +655,7 @@ def test_with_missing_nullable_enum_columns():
         table="enum_table"
     )
     table_relation = db.table("enum_table")
-    assert table_relation.types["enum_column"].startswith("enum__")
+    assert(str(table_relation.types["enum_column"]).startswith("enum__"))
 
     # We generate another dynamic relation where we expect the correct enum type
     null_relation = (
@@ -696,7 +696,7 @@ def test_with_missing_nullable_enum_columns_without_table():
         relation.with_missing_nullable_columns()
 
     model_relation = relation.set_model(EnumModel).with_missing_nullable_columns()
-    assert model_relation.types["enum_column_1"].startswith("enum__")
+    assert str(model_relation.types["enum_column_1"]).startswith("enum__")
     assert (
         model_relation.types["enum_column_2"] == model_relation.types["enum_column_1"]
     )
@@ -728,7 +728,7 @@ def test_with_missing_defualtable_enum_columns():
         relation.with_missing_defaultable_columns()
 
     model_relation = relation.set_model(EnumModel).with_missing_defaultable_columns()
-    assert model_relation.types["enum_column"].startswith("enum__")
+    assert str(model_relation.types["enum_column"]).startswith("enum__")
 
 
 def test_relation_insert_into():
