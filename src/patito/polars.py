@@ -14,6 +14,7 @@ from typing import (
 )
 
 import polars as pl
+from polars.type_aliases import IntoExpr
 from pydantic import create_model
 from typing_extensions import Literal
 
@@ -695,17 +696,9 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
     ) -> DF:
         return cast(DF, super().select(exprs))  # type: ignore[redundant-cast]
 
-    def with_columns(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
-        return cast(DF, super().with_columns(column=column))
-
     def with_columns(  # noqa: D102
         self: DF,
-        exprs: Union[
-            pl.Expr,
-            pl.Series,
-            Sequence[Union[pl.Expr, pl.Series]],
-            None,
-        ] = None,
+        exprs: IntoExpr = None,
         **named_exprs: Union[pl.Expr, pl.Series],
     ) -> DF:
         return cast(DF, super().with_columns(exprs, **named_exprs))
