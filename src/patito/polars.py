@@ -22,7 +22,7 @@ from patito.exceptions import MultipleRowsReturned, RowDoesNotExist
 
 if TYPE_CHECKING:
     import numpy as np
-    from polars.internals import WhenThen, WhenThenThen
+    from polars.functions.whenthen import WhenThen, WhenThenThen
 
     from patito.pydantic import Model
 
