@@ -5,6 +5,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    Iterable,
     Optional,
     Sequence,
     Type,
@@ -22,8 +23,6 @@ from patito.exceptions import MultipleRowsReturned, RowDoesNotExist
 
 if TYPE_CHECKING:
     import numpy as np
-    from polars.functions.whenthen import WhenThen, WhenThenThen
-
     from patito.pydantic import Model
 
 
@@ -688,17 +687,14 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
 
     def select(  # noqa: D102
         self: DF,
-        exprs: Union[
-            pl.Expr,
-            pl.Series,
-            Sequence[Union[str, pl.Expr, pl.Series, "WhenThen", "WhenThenThen"]],
-        ],
+        *exprs: IntoExpr,
+        **named_exprs: Iterable[IntoExpr],
     ) -> DF:
-        return cast(DF, super().select(exprs))  # type: ignore[redundant-cast]
+        return cast(DF, super().select(*exprs, **named_exprs))  # type: ignore[redundant-cast]
 
     def with_columns(  # noqa: D102
         self: DF,
-        exprs: IntoExpr = None,
-        **named_exprs: Union[pl.Expr, pl.Series],
+        *exprs: IntoExpr,
+        **named_exprs: Iterable[IntoExpr],
     ) -> DF:
-        return cast(DF, super().with_columns(exprs, **named_exprs))
+        return cast(DF, super().with_columns(*exprs, **named_exprs))
