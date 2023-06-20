@@ -693,7 +693,7 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
             Sequence[Union[str, pl.Expr, pl.Series, "WhenThen", "WhenThenThen"]],
         ],
     ) -> DF:
-        return cast(DF, super().select(exprs=exprs))  # type: ignore[redundant-cast]
+        return cast(DF, super().select(exprs))  # type: ignore[redundant-cast]
 
     def with_columns(self: DF, column: Union[pl.Series, pl.Expr]) -> DF:  # noqa: D102
         return cast(DF, super().with_columns(column=column))
@@ -708,4 +708,4 @@ class DataFrame(pl.DataFrame, Generic[ModelType]):
         ] = None,
         **named_exprs: Union[pl.Expr, pl.Series],
     ) -> DF:
-        return cast(DF, super().with_columns(exprs=exprs, **named_exprs))
+        return cast(DF, super().with_columns(exprs, **named_exprs))
