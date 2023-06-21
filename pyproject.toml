@@ -11,7 +11,7 @@ documentation = "https://patito.readthedocs.io"
 keywords = ["validation", "dataframe"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 pydantic = ">=1.7.0"
 polars = ">=0.15.2"
 # Required for typing.Literal in python3.7
