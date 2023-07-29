@@ -51,8 +51,8 @@ def test(session):
         "install",
         "--only=main",
         "--extras",
-        # Pandas requires python version >= 3.8
-        "duckdb" if session.python == "3.7" else "duckdb pandas",
+        # Pandas/pyarrow requires python version >= 3.8
+        "duckdb" if session.python == "3.7" else "caching duckdb pandas",
         external=True,
     )
     install_with_constraints(
@@ -82,7 +82,7 @@ def type_check(session):
         "install",
         "--only=main",
         "--extras",
-        "duckdb pandas",
+        "caching duckdb pandas",
         external=True,
     )
     install_with_constraints(
@@ -92,7 +92,7 @@ def type_check(session):
     session.run("mypy", *args)
 
 
-@nox.session(python=["3.9"])
+@nox.session(python=["3.11"])
 def lint(session):
     """Run linters an project using flake8++."""
     args = session.posargs or locations
@@ -110,7 +110,7 @@ def lint(session):
     session.run("flake8", *args)
 
 
-@nox.session(python="3.9")
+@nox.session(python="3.11")
 def format(session):
     """Run the black formatter on the entire code base."""
     args = session.posargs or locations
@@ -127,7 +127,7 @@ def docs(session) -> None:
         "install",
         "--only=main",
         "--extras",
-        "duckdb pandas",
+        "caching duckdb pandas",
         external=True,
     )
     install_with_constraints(
