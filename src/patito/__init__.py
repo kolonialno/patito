@@ -5,11 +5,13 @@ from patito import exceptions, sql
 from patito.exceptions import ValidationError
 from patito.polars import DataFrame, LazyFrame
 from patito.pydantic import Field, Model
+from patito.sources import DataSource
 
 _DUCKDB_AVAILABLE = False
 field = col("_")
 __all__ = [
     "DataFrame",
+    "DataSource",
     "Expr",
     "Field",
     "LazyFrame",
@@ -20,6 +22,7 @@ __all__ = [
     "col",
     "exceptions",
     "field",
+    "Source",
     "sql",
 ]
 
